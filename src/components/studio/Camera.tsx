@@ -100,6 +100,8 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
   const [pinned, setPinned] = useState<string | null>(null);
   const [placeNote, setPlaceNote] = useState("Point the camera at an old building. The name and year show here.");
   const [cams, setCams] = useState<MediaDeviceInfo[]>([]);
+  const [primaryId, setPrimaryId] = useState("");
+  const [secondId, setSecondId] = useState("");
   const [clock, setClock] = useState("00:00:00:00");
   const [copyright, setCopyright] = useState("Tammy Nguyen");
   const [intervalSec, setIntervalSec] = useState(5);
@@ -130,6 +132,7 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
   const hereRef = useRef<{ lat: number; lon: number } | null>(null);
   const headingRef = useRef<number | null>(null);
   const placesRef = useRef<PlaceHit[]>([]);
+  const askedRef = useRef(false);
   const pinnedRef = useRef<string | null>(null);
   const modeRef = useRef<Mode>("exposure");
   const ringRef = useRef<Shot[]>([]);
@@ -214,32 +217,38 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
 
   async function openCamera(facing: Facing, deviceId?: string) {
     streamRef.current?.getTracks().forEach((track) => track.stop());
+    streamRef.current = null;
     patch({ facing });
+    setPrimaryId(deviceId ?? "");
+    await wait(160);
+    const video = deviceId
+      ? { deviceId: { ideal: deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }
+      : { facingMode: { ideal: facing }, width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: settingsRef.current.fps } };
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: deviceId
-          ? { deviceId: { exact: deviceId }, width: { ideal: 1920 }, height: { ideal: 1080 } }
-          : { facingMode: facing, width: { ideal: 1920 }, height: { ideal: 1080 }, frameRate: { ideal: settingsRef.current.fps } },
-      });
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video });
       streamRef.current = stream;
       fileRef.current = null;
       setHasFile(false);
-      const video = videoRef.current;
-      if (video) {
-        video.srcObject = stream;
-        await video.play();
+      const view = videoRef.current;
+      if (view) {
+        view.srcObject = stream;
+        await view.play();
       }
       setLive(true);
       setError(null);
+      const using = stream.getVideoTracks()[0]?.getSettings().deviceId;
+      if (using) setPrimaryId(using);
       const devices = await navigator.mediaDevices.enumerateDevices();
-      setCams(devices.filter((device) => device.kind === "videoinput"));
+      setCams(devices.filter((device) => device.kind === "videoinput" && device.deviceId));
       const track = stream.getVideoTracks()[0];
       if (track) {
         const linked = await linkFocus(track, settingsRef.current.focus);
         setLens(linked ? "Lens focus linked" : "This phone kept autofocus. Peaking still marks the sharp edges.");
       }
-      await askWhere();
+      if (!askedRef.current) {
+        askedRef.current = true;
+        void askWhere();
+      }
     } catch {
       setLive(false);
       setError("The camera needs permission. A digital file still opens.");
@@ -306,12 +315,19 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
 
   async function openSecond(deviceId: string) {
     pipStreamRef.current?.getTracks().forEach((track) => track.stop());
+    pipStreamRef.current = null;
     if (!deviceId) {
       setSecondOn(false);
+      setSecondId("");
       return;
     }
+    setSecondId(deviceId);
+    await wait(160);
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId: { exact: deviceId } }, audio: false });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { deviceId: { ideal: deviceId } },
+      });
       pipStreamRef.current = stream;
       const video = pipVideoRef.current;
       if (video) {
@@ -319,9 +335,11 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
         await video.play();
       }
       setSecondOn(true);
+      setError(null);
     } catch {
       setSecondOn(false);
-      setError("The second camera did not open.");
+      setSecondId("");
+      setError("This phone will not run a second camera at the same time. Choose it as the main camera instead.");
     }
   }
 
@@ -689,6 +707,34 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
         </label>
       </div>
 
+      <div className="cam-pick">
+        <p>Camera</p>
+        <div className="tools">
+          <button type="button" data-on={settings.facing === "environment" && !primaryId ? "1" : "0"} onClick={() => void openCamera("environment")}>
+            Back
+          </button>
+          <button type="button" data-on={settings.facing === "user" && !primaryId ? "1" : "0"} onClick={() => void openCamera("user")}>
+            Front
+          </button>
+          {cams.map((cam, index) => (
+            <button key={cam.deviceId} type="button" data-on={primaryId === cam.deviceId ? "1" : "0"} onClick={() => void openCamera(facingOf(cam), cam.deviceId)}>
+              {cameraName(cam, index)}
+            </button>
+          ))}
+        </div>
+        <p>Second camera</p>
+        <div className="tools">
+          <button type="button" data-on={secondId ? "0" : "1"} onClick={() => void openSecond("")}>
+            Off
+          </button>
+          {cams.map((cam, index) => (
+            <button key={cam.deviceId} type="button" data-on={secondId === cam.deviceId ? "1" : "0"} onClick={() => void openSecond(cam.deviceId)}>
+              {cameraName(cam, index)}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="tools" role="tablist">
         {(
           [
@@ -851,33 +897,6 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
 
       {mode === "studio" && (
         <div className="fields">
-          <label className="field">
-            Camera
-            <select
-              value=""
-              onChange={(event) => {
-                if (event.target.value) void openCamera(settings.facing, event.target.value);
-              }}
-            >
-              <option value="">Choose a camera</option>
-              {cams.map((cam) => (
-                <option key={cam.deviceId} value={cam.deviceId}>
-                  {cam.label || "Camera"}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            Second camera
-            <select value="" onChange={(event) => void openSecond(event.target.value)}>
-              <option value="">None</option>
-              {cams.map((cam) => (
-                <option key={cam.deviceId} value={cam.deviceId}>
-                  {cam.label || "Camera"}
-                </option>
-              ))}
-            </select>
-          </label>
           <button className="btn" type="button" onClick={() => void pictureInPicture()}>
             Virtual camera
           </button>
@@ -988,6 +1007,15 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
       taken: new Date().toISOString(),
     };
   }
+}
+
+function cameraName(cam: MediaDeviceInfo, index: number) {
+  const label = cam.label.replace(/\s*\([0-9a-f]{4}:[0-9a-f]{4}\)$/i, "").trim();
+  return label || `Camera ${index + 1}`;
+}
+
+function facingOf(cam: MediaDeviceInfo): Facing {
+  return /front|user|face/i.test(cam.label) ? "user" : "environment";
 }
 
 function Range({
