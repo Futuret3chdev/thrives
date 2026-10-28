@@ -170,13 +170,8 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
       void shoot("Frame", true);
     };
     window.addEventListener("keydown", onKey);
-    const bus = new BroadcastChannel("thrives-shutter");
-    bus.onmessage = (event) => {
-      if (event.data === "fire") void shoot("Remote", true);
-    };
     return () => {
       window.removeEventListener("keydown", onKey);
-      bus.close();
       streamRef.current?.getTracks().forEach((track) => track.stop());
       pipStreamRef.current?.getTracks().forEach((track) => track.stop());
       audioRef.current?.getTracks().forEach((track) => track.stop());
@@ -608,13 +603,29 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
   }
 
   async function pictureInPicture() {
-    const canvas = viewRef.current;
     const video = videoRef.current;
-    if (!canvas || !video) return;
-    const stream = canvas.captureStream(20);
-    video.srcObject = stream;
-    await video.play();
-    if (document.pictureInPictureEnabled) await video.requestPictureInPicture();
+    if (!live || !video?.srcObject) {
+      setError("Open the camera first. Float then keeps that picture on top of your other apps.");
+      return;
+    }
+    const withMode = video as HTMLVideoElement & { webkitSetPresentationMode?: (mode: "picture-in-picture" | "inline") => void };
+    try {
+      if (document.pictureInPictureEnabled) {
+        await video.requestPictureInPicture();
+        setError(null);
+        setLens("The picture is floating. Tap it to come back to the bench.");
+        return;
+      }
+      if (withMode.webkitSetPresentationMode) {
+        withMode.webkitSetPresentationMode("picture-in-picture");
+        setError(null);
+        setLens("The picture is floating. Tap it to come back to the bench.");
+        return;
+      }
+      setError("This phone will not float the picture. It stays in the bench.");
+    } catch {
+      setError("This phone will not float the picture. It stays in the bench.");
+    }
   }
 
   async function chooseFolder() {
@@ -733,6 +744,7 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
             </button>
           ))}
         </div>
+        {cams.length === 0 && <p className="lens-note">Tap Back or Front. The phone asks permission, then every camera it has is listed here.</p>}
       </div>
 
       <div className="tools" role="tablist">
@@ -898,20 +910,9 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
       {mode === "studio" && (
         <div className="fields">
           <button className="btn" type="button" onClick={() => void pictureInPicture()}>
-            Virtual camera
+            Float the picture
           </button>
-          <button
-            className="btn ghost"
-            type="button"
-            onClick={() => {
-              const bus = new BroadcastChannel("thrives-shutter");
-              bus.postMessage("fire");
-              bus.close();
-              void shoot("Remote", true);
-            }}
-          >
-            Fire every open desk
-          </button>
+          <p className="lens-note">Keeps the camera picture on top of your other apps. There is no server to set up. Open the camera first.</p>
           <label className="field">
             Jam timecode
             <input value={jamText} onChange={(event) => setJamText(event.target.value)} />
