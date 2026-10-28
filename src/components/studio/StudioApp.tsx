@@ -2,8 +2,9 @@ import { useState } from "react";
 import { INSTAGRAM, EMAIL, PLATES, SERVICES } from "./content";
 import { Skyline } from "./Skyline";
 import { Bench } from "./Bench";
+import { Rates } from "./Rates";
 
-type Page = "studio" | "work" | "services" | "bench";
+type Page = "studio" | "work" | "services" | "rates" | "bench";
 
 export function StudioApp() {
   const [page, setPage] = useState<Page>("studio");
@@ -20,6 +21,7 @@ export function StudioApp() {
               ["studio", "Studio"],
               ["work", "Work"],
               ["services", "Services"],
+              ["rates", "Rates"],
               ["bench", "Bench"],
             ] as const
           ).map(([id, label]) => (
@@ -51,6 +53,9 @@ export function StudioApp() {
                 </button>
                 <button className="btn ghost" type="button" onClick={() => setPage("work")}>
                   See the work
+                </button>
+                <button className="btn ghost" type="button" onClick={() => setPage("rates")}>
+                  Rates
                 </button>
               </div>
             </div>
@@ -95,6 +100,8 @@ export function StudioApp() {
           </div>
         </section>
       )}
+
+      {page === "rates" && <Rates />}
 
       {page === "bench" && <Bench />}
 

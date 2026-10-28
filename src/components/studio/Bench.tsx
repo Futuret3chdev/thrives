@@ -17,12 +17,15 @@ import {
   sunDay,
   crossHour,
 } from "@/lib/photo/calc";
+import { Camera } from "./Camera";
+import { Darkroom } from "./Darkroom";
 
-const TOOLS = ["Meter", "Focus", "Grade", "Frame", "Sun", "Ledger"] as const;
+const TOOLS = ["Camera", "Darkroom", "Meter", "Focus", "Grade", "Frame", "Sun", "Ledger"] as const;
 type Tool = (typeof TOOLS)[number];
 
 export function Bench() {
-  const [tool, setTool] = useState<Tool>("Meter");
+  const [tool, setTool] = useState<Tool>("Camera");
+  const [plate, setPlate] = useState("/plates/tammy.jpg");
   return (
     <section className="section" id="bench">
       <p className="kicker">The bench</p>
@@ -35,6 +38,15 @@ export function Bench() {
             </button>
           ))}
         </div>
+        {tool === "Camera" && (
+          <Camera
+            onEdit={(url) => {
+              setPlate(url);
+              setTool("Darkroom");
+            }}
+          />
+        )}
+        {tool === "Darkroom" && <Darkroom src={plate} />}
         {tool === "Meter" && <Meter />}
         {tool === "Focus" && <Focus />}
         {tool === "Grade" && <Grade />}

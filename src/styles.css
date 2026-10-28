@@ -434,6 +434,180 @@ textarea {
   color: var(--color-brass);
 }
 
+.sheet {
+  background: var(--color-paper);
+  border: 1px solid var(--color-line);
+  border-radius: 0.4rem;
+  overflow: hidden;
+}
+
+.sheet-head {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.sheet-mark {
+  background: var(--color-ink);
+  color: var(--color-paper);
+  padding: 1rem 1.1rem;
+}
+
+.sheet-mark b {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.8rem;
+  font-weight: 620;
+  letter-spacing: 0.04em;
+  line-height: 0.95;
+}
+
+.sheet-mark span {
+  color: var(--color-brass-2);
+  font-size: 0.85rem;
+}
+
+.sheet h2 {
+  margin: 0;
+  padding: 0.8rem 1rem 0.2rem;
+  font-family: var(--font-display);
+  font-weight: 460;
+  font-size: clamp(2rem, 6vw, 3.2rem);
+}
+
+.sheet-body {
+  display: grid;
+}
+
+.sheet-body figure {
+  margin: 0;
+  background: var(--color-ink);
+}
+
+.sheet-body img {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  object-fit: cover;
+  object-position: center 20%;
+}
+
+.sheet-group {
+  margin: 0.8rem 1rem 0.2rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  color: var(--color-brass);
+}
+
+.sheet-list article {
+  margin: 0 1rem;
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--color-line);
+}
+
+.sheet-list h3 {
+  margin: 0 0 0.35rem;
+  font-family: var(--font-display);
+  font-weight: 460;
+  font-size: 1.25rem;
+}
+
+.sheet-list ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  color: var(--color-ink-soft);
+  line-height: 1.45;
+}
+
+.sheet-foot {
+  display: grid;
+  gap: 0.35rem;
+  background: var(--color-ink);
+  color: var(--color-paper);
+  padding: 0.9rem 1rem 1rem;
+}
+
+.sheet-foot span {
+  display: block;
+  color: var(--color-brass-2);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+}
+
+.sheet-foot a {
+  color: var(--color-paper);
+  font-size: 1.05rem;
+}
+
+.sheet-foot p {
+  margin: 0.2rem 0 0;
+}
+
+.camera-stage {
+  min-height: 14rem;
+  background: var(--color-ink);
+}
+
+.camera-stage video {
+  width: 100%;
+  display: block;
+  max-height: 24rem;
+  object-fit: cover;
+  background: var(--color-ink);
+}
+
+.camera-stage video.mirror {
+  transform: scaleX(-1);
+}
+
+.camera-wait {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  color: var(--color-paper);
+}
+
+.shots {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.shots figure {
+  margin: 0;
+}
+
+.shots img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 0.6rem;
+}
+
+@media (min-width: 860px) {
+  .sheet-head,
+  .sheet-body {
+    grid-template-columns: 0.9fr 1.2fr;
+  }
+
+  .sheet h2 {
+    align-self: end;
+  }
+
+  .sheet-body img {
+    height: 100%;
+    aspect-ratio: auto;
+    min-height: 28rem;
+  }
+
+  .sheet-foot {
+    grid-template-columns: 1fr 1fr;
+    align-items: end;
+  }
+}
+
 @media (min-width: 860px) {
   .hero,
   .section {
