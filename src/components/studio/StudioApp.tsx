@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Instagram, Mail } from "lucide-react";
 import { INSTAGRAM, EMAIL, PLATES, SERVICES } from "./content";
 import { Skyline } from "./Skyline";
 import { Bench } from "./Bench";
@@ -15,6 +16,14 @@ export function StudioApp() {
           <b>THRIVES</b>
           <span>Tammy Nguyen · CFO & Lead Photographer</span>
         </div>
+        <div className="socials">
+          <a href={INSTAGRAM} target="_blank" rel="noreferrer" aria-label="Instagram">
+            <Instagram />
+          </a>
+          <a href={`mailto:${EMAIL}`} aria-label="Email">
+            <Mail />
+          </a>
+        </div>
         <nav className="nav">
           {(
             [
@@ -29,12 +38,6 @@ export function StudioApp() {
               {label}
             </button>
           ))}
-          <a className="ig" href={INSTAGRAM} target="_blank" rel="noreferrer">
-            Instagram
-          </a>
-          <a className="ig" href={`mailto:${EMAIL}`}>
-            Email
-          </a>
         </nav>
       </header>
 
@@ -60,8 +63,8 @@ export function StudioApp() {
               </div>
             </div>
             <figure className="plate">
-              <img src="/plates/mill.jpg" alt="A limestone mill at dusk beside the river" />
-              <figcaption>River mill · dusk</figcaption>
+              <img src="/plates/melbourne-lane.jpg" alt="A Melbourne bluestone warehouse lane at dusk" />
+              <figcaption>Bluestone lane · Melbourne</figcaption>
             </figure>
           </section>
           <Skyline />

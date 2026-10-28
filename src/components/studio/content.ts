@@ -2,7 +2,14 @@ export const INSTAGRAM = "https://www.instagram.com/nguyen.tammy.thrives";
 export const EMAIL = "Tammy.n@futuret3ch.com.au";
 
 export const PLATES = [
-  { src: "/plates/tammy.jpg", title: "Tammy Nguyen", place: "With the camera" },
+  { src: "/plates/melbourne-lane.jpg", title: "Bluestone lane", place: "Melbourne, Victoria" },
+  { src: "/plates/melbourne-terrace.jpg", title: "Iron lace", place: "Melbourne, Victoria" },
+  { src: "/plates/ballarat-bank.jpg", title: "Goldfields bank", place: "Ballarat, Victoria" },
+  { src: "/plates/sydney-stone.jpg", title: "Sandstone stores", place: "Sydney, New South Wales" },
+  { src: "/plates/brisbane-timber.jpg", title: "Timber verandah", place: "Brisbane, Queensland" },
+  { src: "/plates/adelaide-stone.jpg", title: "Stone rooms", place: "Adelaide, South Australia" },
+  { src: "/plates/hobart-stone.jpg", title: "Warehouse weather", place: "Hobart, Tasmania" },
+  { src: "/plates/fremantle-lime.jpg", title: "Limestone bond store", place: "Fremantle, Western Australia" },
   { src: "/plates/mill.jpg", title: "River mill", place: "Dusk, limestone" },
   { src: "/plates/warehouse.jpg", title: "Warehouse row", place: "Fog, brick" },
   { src: "/plates/bank.jpg", title: "The old bank", place: "Marble hall" },
