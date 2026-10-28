@@ -1,6 +1,6 @@
 export function Skyline() {
   return (
-    <svg className="sky" viewBox="0 0 800 140" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+    <svg className="sky" viewBox="0 0 800 140" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
       <rect width="800" height="140" fill="#e7dfd2" />
       <path d="M0 110h800" stroke="#8d6238" strokeOpacity="0.35" />
       <g fill="#1c1712">

@@ -26,6 +26,8 @@
     color: var(--color-ink);
     font-family: var(--font-sans);
     min-height: 100%;
+    max-width: 100%;
+    overflow-x: clip;
   }
 
   body {
@@ -40,7 +42,10 @@
 }
 
 .shell {
+  width: 100%;
+  max-width: 100%;
   min-height: 100dvh;
+  overflow-x: clip;
 }
 
 .top {
@@ -162,16 +167,16 @@
   position: relative;
   overflow: hidden;
   border-radius: 1.2rem;
-  min-height: 16rem;
   background: var(--color-ink);
+  max-width: 100%;
 }
 
 .plate img {
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  min-height: 18rem;
-  animation: drift 22s ease-in-out infinite alternate;
+  height: auto;
+  max-height: 62dvh;
+  object-fit: contain;
+  object-position: center;
 }
 
 .plate figcaption {
@@ -186,7 +191,9 @@
 .sky {
   display: block;
   width: 100%;
-  height: 7.5rem;
+  max-width: 100%;
+  height: auto;
+  max-height: 7.5rem;
   margin-top: 0.4rem;
 }
 
