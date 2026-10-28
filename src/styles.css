@@ -694,6 +694,14 @@ textarea {
   gap: 0.35rem;
 }
 
+.cam-pick > p {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-ink-soft);
+}
+
 .cam-pick .lens-note {
   text-transform: none;
   letter-spacing: 0;
