@@ -113,7 +113,6 @@ export function StudioApp() {
           <a href={INSTAGRAM} target="_blank" rel="noreferrer">
             Instagram
           </a>
-          . Add THRIVES to the iPhone home screen from the share menu.
         </p>
       </footer>
     </div>
