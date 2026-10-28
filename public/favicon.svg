@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="THRIVES">
+  <rect width="32" height="32" rx="7" fill="#1c1712"/>
+  <circle cx="16" cy="16" r="9.25" fill="none" stroke="#8d6238" stroke-width="2.4"/>
+  <circle cx="16" cy="16" r="3.1" fill="#f3eee6"/>
+  <rect x="14.7" y="6.2" width="2.6" height="3.1" rx="0.4" fill="#d9cfc0"/>
+</svg>
