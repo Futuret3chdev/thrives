@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import { formatShutter } from "@/lib/photo/calc";
 import { averageLuma, gradeFrame, shutterFromAngle, type Flags, type Grade, type Lut, type Scopes } from "@/lib/photo/optics";
 import { aimPlace, loadPlaces, type PlaceHit } from "@/lib/photo/places";
-import { seeFrame, type Seen } from "@/lib/photo/seen";
 
 const ISOS = [50, 100, 200, 400, 800, 1600, 3200, 6400, 12800];
 const SPEEDS = [1 / 8000, 1 / 4000, 1 / 2000, 1 / 1000, 1 / 500, 1 / 250, 1 / 125, 1 / 60, 1 / 30, 1 / 15, 1 / 8, 1 / 4, 1 / 2, 1, 2];
@@ -99,8 +98,7 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
   const [places, setPlaces] = useState<PlaceHit[]>([]);
   const [aimed, setAimed] = useState<PlaceHit | null>(null);
   const [pinned, setPinned] = useState<string | null>(null);
-  const [placeNote, setPlaceNote] = useState("Point the camera. It names whatever is in the frame.");
-  const [seen, setSeen] = useState<Seen | null>(null);
+  const [placeNote, setPlaceNote] = useState("Point the camera at an old building. The name and year show here.");
   const [cams, setCams] = useState<MediaDeviceInfo[]>([]);
   const [clock, setClock] = useState("00:00:00:00");
   const [copyright, setCopyright] = useState("Tammy Nguyen");
@@ -127,7 +125,6 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const recorderRef = useRef<MediaRecorder | null>(null);
   const fileRef = useRef<HTMLImageElement | null>(null);
-  const seenRef = useRef<Seen | null>(null);
   const magRef = useRef<HTMLCanvasElement | null>(null);
   const placeRef = useRef<PlaceHit | null>(null);
   const hereRef = useRef<{ lat: number; lon: number } | null>(null);
@@ -201,36 +198,6 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
     return () => {
       stop = true;
       cancelAnimationFrame(frame);
-    };
-  }, []);
-
-  useEffect(() => {
-    let stop = false;
-    let failed = false;
-    const look = async () => {
-      while (!stop) {
-        await wait(1100);
-        if (stop) return;
-        const file = fileRef.current;
-        const video = videoRef.current;
-        const source = file && file.complete && file.naturalWidth ? file : video && video.videoWidth ? video : null;
-        if (!source) continue;
-        try {
-          const next = await seeFrame(source);
-          if (stop) return;
-          seenRef.current = next;
-          setSeen(next);
-        } catch {
-          if (!failed) {
-            failed = true;
-            setPlaceNote("The frame reader did not start. Nearby places still show when location is on.");
-          }
-        }
-      }
-    };
-    void look();
-    return () => {
-      stop = true;
     };
   }, []);
 
@@ -680,17 +647,15 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
           {settings.nd > 0 && <span>ND {settings.nd.toFixed(1)}</span>}
         </div>
         <div className="place-card">
-          {(() => {
-            const caption = frameCaption(seen, shown);
-            if (!caption.title) return <p>{placeNote}</p>;
-            return (
-              <>
-                <b>{caption.title}</b>
-                {caption.line && <em>{caption.line}</em>}
-                {caption.about && <p>{caption.about}</p>}
-              </>
-            );
-          })()}
+          {shown ? (
+            <>
+              <b>{shown.name}</b>
+              <em>{shown.year || "Year unrecorded"}</em>
+              <p>{shown.about}</p>
+            </>
+          ) : (
+            <p>{placeNote}</p>
+          )}
         </div>
         {!live && !hasFile && <p className="camera-wait">Open the camera, or load a digital file.</p>}
       </div>
@@ -941,12 +906,6 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
 
       {mode === "place" && (
         <div className="fields">
-          {seen && (
-            <article className="card">
-              <h3>{seen.label}</h3>
-              <p>{seen.also ? `Also ${seen.also}. ` : ""}This is what the lens is on.</p>
-            </article>
-          )}
           {shown ? (
             <article className="card">
               <h3>{shown.name}</h3>
@@ -1026,28 +985,9 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
       playbackFps: desk.fps >= 60 ? 24 : desk.fps,
       timecode: timecode(Date.now() - jamRef.current, desk.fps),
       place: place ? { name: place.name, year: place.year, about: place.about, href: place.href } : null,
-      seen: seenRef.current ? { label: seenRef.current.label, also: seenRef.current.also } : null,
       taken: new Date().toISOString(),
     };
   }
-}
-
-function frameCaption(seen: Seen | null, place: PlaceHit | null) {
-  const titleCase = (label: string) => label.charAt(0).toUpperCase() + label.slice(1);
-  if (seen && place && seen.placeLike) {
-    return {
-      title: place.name,
-      line: [titleCase(seen.label), place.year].filter(Boolean).join(" · "),
-      about: place.about,
-    };
-  }
-  if (seen) {
-    return { title: titleCase(seen.label), line: seen.also ? `Also ${titleCase(seen.also)}` : "", about: "" };
-  }
-  if (place) {
-    return { title: place.name, line: place.year || "Year unrecorded", about: place.about };
-  }
-  return { title: "", line: "", about: "" };
 }
 
 function Range({
