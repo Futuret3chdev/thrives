@@ -50,7 +50,7 @@ export function StudioApp() {
               <p className="lede">
                 Tammy Nguyen photographs the rooms and facades that outlast a lease. She is the lead photographer and the CFO, so the picture and the invoice leave together.
               </p>
-              <div className="row">
+              <div className="actions">
                 <button className="btn" type="button" onClick={() => setPage("bench")}>
                   Open the bench
                 </button>

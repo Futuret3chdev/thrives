@@ -176,6 +176,20 @@
   gap: 0.5rem;
 }
 
+.actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.actions .btn {
+  width: 100%;
+}
+
+.actions .btn:first-child {
+  grid-column: 1 / -1;
+}
+
 .btn {
   border: 1px solid var(--color-ink);
   background: var(--color-ink);
@@ -840,6 +854,15 @@ textarea {
   .tools button {
     flex: 0 1 auto;
     min-width: 6.5rem;
+  }
+
+  .actions {
+    grid-template-columns: auto auto auto;
+    justify-content: start;
+  }
+
+  .actions .btn:first-child {
+    grid-column: auto;
   }
 
   .hero {
