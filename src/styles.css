@@ -432,26 +432,34 @@
   color: #ff5a4f;
 }
 
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
+.desk:has(.filter-drop) {
+  max-height: none;
+  overflow: visible;
+  background: #24282e;
+  border: 1px solid #3a404a;
+  border-radius: 0.7rem;
+  padding: 0.7rem 0.8rem 0.85rem;
 }
 
-.chips button {
-  border: 1px solid #3c4450;
-  background: #2a303a;
-  color: #f3eee6;
-  border-radius: 999px;
-  min-height: 2rem;
-  padding: 0.2rem 0.65rem;
-  font: inherit;
-  font-size: 0.78rem;
+.filter-drop {
+  margin: 0;
+  color: #e7e4de;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
-.chips button[data-on="1"] {
-  background: #f3eee6;
-  color: #1c1712;
+.filter-drop select {
+  margin-top: 0.35rem;
+  width: 100%;
+  min-height: 2.8rem;
+  border-radius: 0.55rem;
+  background: #2e343c;
+  color: #f4f1ea;
+  border: 1px solid #4a525e;
+  font-size: 1rem;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .hud-back {

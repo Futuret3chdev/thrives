@@ -844,20 +844,25 @@ export function Camera({ onEdit, onBench }: { onEdit: (url: string) => void; onB
       {open && (
       <div className="desk" data-place={mode === "place" ? "1" : "0"}>
       {mode === "look" && (
-        <div className="fields">
-          {(["Style", "Lens"] as const).map((group) => (
-            <div key={group}>
-              <p className="lens-note">{group === "Lens" ? "Lens filters" : "Looks"}</p>
-              <div className="chips">
-                {LOOKS.filter((look) => look.group === group).map((look) => (
-                  <button key={look.id} type="button" data-on={settings.look === look.id ? "1" : "0"} onClick={() => patch({ look: look.id })}>
-                    {look.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
+        <label className="field filter-drop">
+          Filter
+          <select value={settings.look} onChange={(event) => patch({ look: event.target.value })}>
+            <optgroup label="Looks">
+              {LOOKS.filter((look) => look.group === "Style").map((look) => (
+                <option key={look.id} value={look.id}>
+                  {look.name}
+                </option>
+              ))}
+            </optgroup>
+            <optgroup label="Lens filters">
+              {LOOKS.filter((look) => look.group === "Lens").map((look) => (
+                <option key={look.id} value={look.id}>
+                  {look.name}
+                </option>
+              ))}
+            </optgroup>
+          </select>
+        </label>
       )}
 
       {mode === "cams" && (
