@@ -445,6 +445,7 @@ function Sun() {
 function Ledger() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [client, setClient] = useState("");
+  const [clientEmail, setClientEmail] = useState("");
   const [hours, setHours] = useState(6);
   const [rate, setRate] = useState(180);
   const [expenses, setExpenses] = useState(40);
@@ -458,6 +459,9 @@ function Ledger() {
       <div className="fields two">
         <Field label="Client">
           <input value={client} onChange={(e) => setClient(e.target.value)} placeholder="Estate, magazine, family" />
+        </Field>
+        <Field label="Client email">
+          <input type="email" value={clientEmail} onChange={(e) => setClientEmail(e.target.value)} placeholder="client@email.com" />
         </Field>
         <Field label="Hours">
           <input type="number" min={1} value={hours} onChange={(e) => setHours(Number(e.target.value))} />
@@ -485,42 +489,12 @@ function Ledger() {
           <b>${draft.due.toFixed(0)}</b>
         </div>
       </div>
-      <button
-        className="btn"
-        type="button"
-        onClick={() => {
-          const lines = [
-            "THRIVES",
-            "Tammy Nguyen, CFO and Lead Photographer",
-            "Tammy.n@futuret3ch.com.au",
-            "",
-            "Quote",
-            `Client: ${client.trim() || "To be named"}`,
-            `Date: ${new Date().toISOString().slice(0, 10)}`,
-            `Hours: ${hours}`,
-            `Day rate portion: $${rate}`,
-            `Expenses: $${expenses}`,
-            `Tax: ${tax}%`,
-            `Quote: $${draft.gross.toFixed(0)}`,
-            `Deposit due: $${draft.due.toFixed(0)}`,
-            "",
-            "A time, and Tammy quotes you in person.",
-          ];
-          const blob = quotePdf(lines);
-          const link = document.createElement("a");
-          link.href = URL.createObjectURL(blob);
-          link.download = `thrives-quote-${(client || "client").replace(/\s+/g, "-").toLowerCase()}.pdf`;
-          link.click();
-        }}
-      >
-        Give the client this PDF
+      <button className="btn" type="button" onClick={() => sendQuote(client, clientEmail, hours, rate, expenses, tax, draft.gross, draft.due)}>
+        Send quote
       </button>
-      <a
-        className="btn ghost"
-        href={`mailto:Tammy.n@futuret3ch.com.au?subject=${encodeURIComponent(`Booking confirmation for ${client || "a client"}`)}&body=${encodeURIComponent(`Please confirm this booking.\n\nClient: ${client}\nHours: ${hours}\nQuote: $${draft.gross.toFixed(0)}\nDeposit: $${draft.due.toFixed(0)}`)}`}
-      >
-        Email Tammy to confirm
-      </a>
+      <button className="btn ghost" type="button" onClick={() => void shareQuote(client, hours, rate, expenses, tax, draft.gross, draft.due)}>
+        Download and share
+      </button>
       <button
         className="btn ghost"
         type="button"
@@ -561,6 +535,50 @@ function Ledger() {
       <p>Booked on this phone: ${book.toFixed(0)}. Stays in this browser.</p>
     </div>
   );
+}
+
+function quoteLines(client: string, hours: number, rate: number, expenses: number, tax: number, gross: number, due: number) {
+  return [
+    "THRIVES",
+    "Tammy Nguyen, CFO and Lead Photographer",
+    "Tammy.n@futuret3ch.com.au",
+    "",
+    "Quote",
+    `Client: ${client.trim() || "To be named"}`,
+    `Date: ${new Date().toISOString().slice(0, 10)}`,
+    `Hours: ${hours}`,
+    `Day rate portion: $${rate}`,
+    `Expenses: $${expenses}`,
+    `Tax: ${tax}%`,
+    `Quote: $${gross.toFixed(0)}`,
+    `Deposit due: $${due.toFixed(0)}`,
+    "",
+    "A time, and Tammy quotes you in person.",
+  ];
+}
+
+function sendQuote(client: string, clientEmail: string, hours: number, rate: number, expenses: number, tax: number, gross: number, due: number) {
+  const to = clientEmail.trim();
+  const subject = `Quote for ${client.trim() || "your shoot"}`;
+  const body = quoteLines(client, hours, rate, expenses, tax, gross, due).join("\n");
+  const href = to
+    ? `mailto:${encodeURIComponent(to)}?cc=${encodeURIComponent(EMAIL)}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+    : `mailto:${EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  window.location.href = href;
+}
+
+async function shareQuote(client: string, hours: number, rate: number, expenses: number, tax: number, gross: number, due: number) {
+  const blob = quotePdf(quoteLines(client, hours, rate, expenses, tax, gross, due));
+  const name = `thrives-quote-${(client || "client").replace(/\s+/g, "-").toLowerCase()}.pdf`;
+  const file = new File([blob], name, { type: "application/pdf" });
+  if (navigator.canShare?.({ files: [file] })) {
+    await navigator.share({ files: [file], title: "THRIVES quote", text: "Quote from Tammy Nguyen" });
+    return;
+  }
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = name;
+  link.click();
 }
 
 function quotePdf(lines: string[]) {
