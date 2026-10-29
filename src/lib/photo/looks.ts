@@ -5,6 +5,7 @@ export const LOOKS = [
   { id: "moody-matte", group: "Style", name: "Moody matte" },
   { id: "light-airy", group: "Style", name: "Light and airy" },
   { id: "contrast-bw", group: "Style", name: "High contrast black and white" },
+  { id: "bw", group: "Style", name: "Black and white" },
   { id: "polaroid", group: "Style", name: "Faded Polaroid" },
   { id: "neon", group: "Style", name: "Cyberpunk neon" },
   { id: "cross", group: "Style", name: "Cross-processed" },
@@ -67,6 +68,8 @@ export function applyLook(r: number, g: number, b: number, id: string, x = 0.5, 
       const v = Math.min(1, Math.max(0, (Y - 0.42) * 1.8 + 0.42));
       return [v, v, v];
     }
+    case "bw":
+      return [Y, Y, Y];
     case "polaroid":
       return [mix(0.18, r * 1.02, 0.86), mix(0.2, g * 0.98, 0.84), mix(0.22, b * 1.04, 0.84)];
     case "neon":
