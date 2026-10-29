@@ -18,11 +18,11 @@ import {
   crossHour,
 } from "@/lib/photo/calc";
 import { LOOKS, applyLook } from "@/lib/photo/looks";
+import { EMAIL, SERVICES } from "./content";
 import { Camera } from "./Camera";
 import { Darkroom } from "./Darkroom";
 
-const TOOLS = ["Camera", "Darkroom", "Meter", "Focus", "Grade", "Frame", "Sun", "Ledger"] as const;
-type Tool = (typeof TOOLS)[number];
+type Tool = "Camera" | "Darkroom" | "Meter" | "Focus" | "Grade" | "Frame" | "Sun" | "Ledger" | "Book";
 
 export function Bench() {
   const [tool, setTool] = useState<Tool>("Camera");
@@ -32,21 +32,25 @@ export function Bench() {
       <p className="kicker">The bench</p>
       <h2>What the day needs</h2>
       <div className="bench">
-        <div className="tools" role="tablist">
-          {TOOLS.map((name) => (
-            <button key={name} type="button" role="tab" data-on={tool === name ? "1" : "0"} onClick={() => setTool(name)}>
-              {name}
+        <Camera
+          onBench={(name) => setTool(name)}
+          onEdit={(url) => {
+            setPlate(url);
+            setTool("Darkroom");
+          }}
+        >
+          <div className="tools under-cam">
+            <button type="button" data-on={tool === "Sun" ? "1" : "0"} onClick={() => setTool(tool === "Sun" ? "Camera" : "Sun")}>
+              Sun
             </button>
-          ))}
-        </div>
-        {tool === "Camera" && (
-          <Camera
-            onEdit={(url) => {
-              setPlate(url);
-              setTool("Darkroom");
-            }}
-          />
-        )}
+            <button type="button" data-on={tool === "Ledger" ? "1" : "0"} onClick={() => setTool(tool === "Ledger" ? "Camera" : "Ledger")}>
+              Ledger
+            </button>
+            <button type="button" data-on={tool === "Book" ? "1" : "0"} onClick={() => setTool(tool === "Book" ? "Camera" : "Book")}>
+              Book
+            </button>
+          </div>
+        </Camera>
         {tool === "Darkroom" && <Darkroom src={plate} />}
         {tool === "Meter" && <Meter />}
         {tool === "Focus" && <Focus />}
@@ -54,8 +58,59 @@ export function Bench() {
         {tool === "Frame" && <Frame />}
         {tool === "Sun" && <Sun />}
         {tool === "Ledger" && <Ledger />}
+        {tool === "Book" && <BookForm />}
       </div>
     </section>
+  );
+}
+
+export function BookForm() {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [service, setService] = useState(SERVICES[0]?.title ?? "Sitting");
+  const [date, setDate] = useState("");
+  const [time, setTime] = useState("10:00");
+  const [note, setNote] = useState("");
+  const body = `Name: ${name}\nEmail: ${email}\nService: ${service}\nPreferred date: ${date}\nPreferred time: ${time}\nNotes: ${note}\n\nA time, and Tammy quotes in person.`;
+  const href = `mailto:${EMAIL}?cc=${encodeURIComponent(email)}&subject=${encodeURIComponent(`Booking request from ${name || "a client"}`)}&body=${encodeURIComponent(body)}`;
+  return (
+    <form className="panel" onSubmit={(event) => event.preventDefault()}>
+      <label className="field">
+        Name
+        <input value={name} onChange={(event) => setName(event.target.value)} />
+      </label>
+      <label className="field">
+        Your email
+        <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+      </label>
+      <label className="field">
+        Service
+        <select value={service} onChange={(event) => setService(event.target.value)}>
+          {SERVICES.map((item) => (
+            <option key={item.title}>{item.title}</option>
+          ))}
+        </select>
+      </label>
+      <label className="field">
+        Preferred date
+        <input type="date" value={date} onChange={(event) => setDate(event.target.value)} />
+      </label>
+      <label className="field">
+        Preferred time
+        <select value={time} onChange={(event) => setTime(event.target.value)}>
+          {["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00", "16:00", "17:00"].map((slot) => (
+            <option key={slot}>{slot}</option>
+          ))}
+        </select>
+      </label>
+      <label className="field">
+        Notes
+        <input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Place, people, what the picture is for" />
+      </label>
+      <a className="btn" href={href}>
+        Email Tammy and yourself
+      </a>
+    </form>
   );
 }
 
@@ -434,27 +489,52 @@ function Ledger() {
         className="btn"
         type="button"
         onClick={() => {
+          const lines = [
+            "THRIVES",
+            "Tammy Nguyen, CFO and Lead Photographer",
+            "Tammy.n@futuret3ch.com.au",
+            "",
+            "Quote",
+            `Client: ${client.trim() || "To be named"}`,
+            `Date: ${new Date().toISOString().slice(0, 10)}`,
+            `Hours: ${hours}`,
+            `Day rate portion: $${rate}`,
+            `Expenses: $${expenses}`,
+            `Tax: ${tax}%`,
+            `Quote: $${draft.gross.toFixed(0)}`,
+            `Deposit due: $${draft.due.toFixed(0)}`,
+            "",
+            "A time, and Tammy quotes you in person.",
+          ];
+          const blob = quotePdf(lines);
+          const link = document.createElement("a");
+          link.href = URL.createObjectURL(blob);
+          link.download = `thrives-quote-${(client || "client").replace(/\s+/g, "-").toLowerCase()}.pdf`;
+          link.click();
+        }}
+      >
+        Give the client this PDF
+      </button>
+      <a
+        className="btn ghost"
+        href={`mailto:Tammy.n@futuret3ch.com.au?subject=${encodeURIComponent(`Booking confirmation for ${client || "a client"}`)}&body=${encodeURIComponent(`Please confirm this booking.\n\nClient: ${client}\nHours: ${hours}\nQuote: $${draft.gross.toFixed(0)}\nDeposit: $${draft.due.toFixed(0)}`)}`}
+      >
+        Email Tammy to confirm
+      </a>
+      <button
+        className="btn ghost"
+        type="button"
+        onClick={() => {
           if (!client.trim()) return;
           const next = [
-            {
-              id: crypto.randomUUID(),
-              client: client.trim(),
-              date: new Date().toISOString().slice(0, 10),
-              hours,
-              rate,
-              expenses,
-              tax,
-              deposit,
-              note: "",
-            },
+            { id: crypto.randomUUID(), client: client.trim(), date: new Date().toISOString().slice(0, 10), hours, rate, expenses, tax, deposit, note: "" },
             ...jobs,
           ];
           setJobs(next);
           saveJobs(next);
-          setClient("");
         }}
       >
-        Keep this job
+        Keep this job on the phone
       </button>
       <div className="jobs">
         {jobs.map((job) => (
@@ -481,6 +561,30 @@ function Ledger() {
       <p>Booked on this phone: ${book.toFixed(0)}. Stays in this browser.</p>
     </div>
   );
+}
+
+function quotePdf(lines: string[]) {
+  const content = lines
+    .map((line, index) => `BT /F1 12 Tf 48 ${760 - index * 18} Td (${line.replace(/[()\\]/g, " ").replace(/[^\x20-\x7E]/g, " ")}) Tj ET`)
+    .join("\n");
+  const objects = [
+    "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n",
+    "2 0 obj << /Type /Pages /Count 1 /Kids [3 0 R] >> endobj\n",
+    "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >> endobj\n",
+    `4 0 obj << /Length ${content.length} >> stream\n${content}\nendstream endobj\n`,
+    "5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n",
+  ];
+  let pdf = "%PDF-1.4\n";
+  const offsets = [0];
+  for (const object of objects) {
+    offsets.push(pdf.length);
+    pdf += object;
+  }
+  const start = pdf.length;
+  pdf += "xref\n0 6\n0000000000 65535 f \n";
+  for (let index = 1; index <= 5; index += 1) pdf += `${String(offsets[index]).padStart(10, "0")} 00000 n \n`;
+  pdf += `trailer << /Size 6 /Root 1 0 R >>\nstartxref\n${start}\n%%EOF`;
+  return new Blob([pdf], { type: "application/pdf" });
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {

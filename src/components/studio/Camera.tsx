@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { formatShutter } from "@/lib/photo/calc";
 import { averageLuma, gradeFrame, shutterFromAngle, type Flags, type Grade, type Lut, type Scopes } from "@/lib/photo/optics";
 import { LOOKS } from "@/lib/photo/looks";
@@ -90,7 +90,15 @@ const INITIAL: Settings = {
   facing: "environment",
 };
 
-export function Camera({ onEdit, onBench }: { onEdit: (url: string) => void; onBench: (tool: "Darkroom" | "Meter" | "Focus" | "Grade" | "Frame") => void }) {
+export function Camera({
+  onEdit,
+  onBench,
+  children,
+}: {
+  onEdit: (url: string) => void;
+  onBench: (tool: "Darkroom" | "Meter" | "Focus" | "Grade" | "Frame") => void;
+  children?: ReactNode;
+}) {
   const [settings, setSettings] = useState<Settings>(INITIAL);
   const [mode, setMode] = useState<Mode>("exposure");
   const [open, setOpen] = useState(false);
@@ -840,6 +848,7 @@ export function Camera({ onEdit, onBench }: { onEdit: (url: string) => void; onB
         )}
       </div>
       </div>
+      {children}
 
       {open && (
       <div className="desk" data-place={mode === "place" ? "1" : "0"}>

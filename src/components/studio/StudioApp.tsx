@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { INSTAGRAM, EMAIL, PLATES, SERVICES } from "./content";
 import { Skyline } from "./Skyline";
-import { Bench } from "./Bench";
+import { Bench, BookForm } from "./Bench";
 import { Rates } from "./Rates";
 
-type Page = "studio" | "work" | "services" | "rates" | "bench";
+type Page = "studio" | "work" | "services" | "rates" | "bench" | "book";
 
 export function StudioApp() {
   const [page, setPage] = useState<Page>("studio");
@@ -38,6 +38,12 @@ export function StudioApp() {
               <path d="M6.2 8.6l5.8 4.2 5.8-4.2" fill="none" stroke="#fff" strokeWidth="1.3" />
             </svg>
           </a>
+          <button className="book-mark" type="button" aria-label="Book a time" onClick={() => setPage("book")}>
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="10.2" fill="#1c1712" />
+              <path d="M7 8.5h10M7 12h10M7 15.5h6" fill="none" stroke="#f3eee6" strokeWidth="1.6" strokeLinecap="round" />
+            </svg>
+          </button>
         </div>
         <nav className="nav">
           {(
@@ -47,6 +53,7 @@ export function StudioApp() {
               ["services", "Services"],
               ["rates", "Rates"],
               ["bench", "Bench"],
+              ["book", "Book"],
             ] as const
           ).map(([id, label]) => (
             <button key={id} type="button" data-on={page === id ? "1" : "0"} onClick={() => setPage(id)}>
@@ -123,6 +130,13 @@ export function StudioApp() {
       {page === "rates" && <Rates />}
 
       {page === "bench" && <Bench />}
+      {page === "book" && (
+        <section className="section">
+          <p className="kicker">Book</p>
+          <h2>A time, and Tammy quotes you in person.</h2>
+          <BookForm />
+        </section>
+      )}
 
       <footer className="foot">
         <p>
