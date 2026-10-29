@@ -127,7 +127,7 @@ export function StudioApp() {
         </section>
       )}
 
-      {page === "rates" && <Rates />}
+      {page === "rates" && <Rates onBook={() => setPage("book")} />}
 
       {page === "bench" && <Bench />}
       {page === "book" && (

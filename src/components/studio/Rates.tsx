@@ -1,6 +1,6 @@
 import { EMAIL, RATES } from "./content";
 
-export function Rates() {
+export function Rates({ onBook }: { onBook: () => void }) {
   return (
     <section className="section">
       <div className="sheet">
@@ -33,13 +33,13 @@ export function Rates() {
             ))}
           </div>
         </div>
-        <div className="sheet-foot">
+        <button className="sheet-foot" type="button" onClick={onBook}>
           <div>
             <span>Book</span>
-            <a href={`mailto:${EMAIL}?subject=A%20time%20for%20a%20quote`}>{EMAIL}</a>
+            <b>{EMAIL}</b>
           </div>
           <p>A time, and I’ll quote you in person.</p>
-        </div>
+        </button>
       </div>
     </section>
   );
