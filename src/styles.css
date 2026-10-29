@@ -224,9 +224,14 @@
 }
 
 .quote-actions .btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-width: 0;
+  width: 100%;
   padding: 0 0.35rem;
   font-size: 0.78rem;
+  line-height: 1.1;
   text-align: center;
   text-decoration: none;
 }
