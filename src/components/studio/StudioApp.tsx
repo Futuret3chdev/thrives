@@ -38,18 +38,12 @@ export function StudioApp() {
               <path d="M6.2 8.6l5.8 4.2 5.8-4.2" fill="none" stroke="#fff" strokeWidth="1.3" />
             </svg>
           </a>
-          <button className="book-mark" type="button" aria-label="Book a time" onClick={() => setPage("book")}>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="12" r="10.2" fill="#1c1712" />
-              <path d="M7 8.5h10M7 12h10M7 15.5h6" fill="none" stroke="#f3eee6" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
-          </button>
         </div>
         <nav className="nav">
           {(
             [
               ["studio", "Studio"],
-              ["work", "Work"],
+              ["work", "Portfolio"],
               ["services", "Services"],
               ["rates", "Rates"],
               ["bench", "Bench"],
@@ -77,7 +71,7 @@ export function StudioApp() {
                   Open the bench
                 </button>
                 <button className="btn ghost" type="button" onClick={() => setPage("work")}>
-                  See the work
+                  See the portfolio
                 </button>
                 <button className="btn ghost" type="button" onClick={() => setPage("rates")}>
                   Rates
@@ -95,8 +89,8 @@ export function StudioApp() {
 
       {page === "work" && (
         <section className="section">
-          <p className="kicker">Plates</p>
-          <h2>Buildings that still work</h2>
+          <p className="kicker">Portfolio</p>
+          <h2>Chosen frames from Instagram</h2>
           <div className="work">
             {PLATES.map((plate) => (
               <figure key={plate.src}>
@@ -108,6 +102,11 @@ export function StudioApp() {
               </figure>
             ))}
           </div>
+          <p style={{ marginTop: "1.5rem", opacity: 0.7 }}>
+            <a href={INSTAGRAM} target="_blank" rel="noreferrer">
+              View the full Instagram feed →
+            </a>
+          </p>
         </section>
       )}
 
@@ -135,6 +134,16 @@ export function StudioApp() {
           <p className="kicker">Book</p>
           <h2>A time, and Tammy quotes you in person.</h2>
           <BookForm />
+          <div style={{ marginTop: "2rem", display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+            <div className="card" style={{ flex: "1 1 200px", padding: "1.2rem" }}>
+              <h3 style={{ margin: "0 0 0.5rem" }}>Sun</h3>
+              <p style={{ margin: 0, opacity: 0.8 }}>Daylight and golden-hour planning for the location.</p>
+            </div>
+            <div className="card" style={{ flex: "1 1 200px", padding: "1.2rem" }}>
+              <h3 style={{ margin: "0 0 0.5rem" }}>Ledger</h3>
+              <p style={{ margin: 0, opacity: 0.8 }}>Job notes, rates and the quote that leaves with the pictures.</p>
+            </div>
+          </div>
         </section>
       )}
 
