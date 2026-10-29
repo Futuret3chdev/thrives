@@ -18,6 +18,7 @@ import {
   crossHour,
 } from "@/lib/photo/calc";
 import { LOOKS, applyLook } from "@/lib/photo/looks";
+import { quotePdfBlob } from "@/lib/photo/document";
 import { EMAIL, SERVICES } from "./content";
 import { Camera } from "./Camera";
 import { Darkroom } from "./Darkroom";
@@ -111,10 +112,10 @@ export function BookForm() {
         <a className="btn" href={href}>
           Email quote
         </a>
-        <button className="btn ghost" type="button" onClick={() => downloadBooking(name, body)}>
+        <button className="btn ghost" type="button" onClick={() => downloadBooking(name, email, service, date, time, note)}>
           Download
         </button>
-        <button className="btn ghost" type="button" onClick={() => void shareBooking(name, body)}>
+        <button className="btn ghost" type="button" onClick={() => void shareBooking(name, email, service, date, time, note, body)}>
           Share
         </button>
       </div>
@@ -122,32 +123,32 @@ export function BookForm() {
   );
 }
 
-function bookingFile(name: string, body: string) {
-  const lines = ["THRIVES", "Booking", "", ...body.split("\n")];
-  const blob = quotePdf(lines);
+async function bookingFile(name: string, email: string, service: string, date: string, time: string, note: string) {
+  const blob = await quotePdfBlob({ kind: "Booking", client: name, email, service, date, time, note });
   const fileName = `thrives-booking-${(name || "client").replace(/\s+/g, "-").toLowerCase()}.pdf`;
   return { blob, fileName, file: new File([blob], fileName, { type: "application/pdf" }) };
 }
 
-function downloadBooking(name: string, body: string) {
-  const { blob, fileName } = bookingFile(name, body);
-  const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.download = fileName;
-  link.click();
+function downloadBooking(name: string, email: string, service: string, date: string, time: string, note: string) {
+  void bookingFile(name, email, service, date, time, note).then(({ blob, fileName }) => {
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = fileName;
+    link.click();
+  });
 }
 
-async function shareBooking(name: string, body: string) {
-  const { file } = bookingFile(name, body);
+async function shareBooking(name: string, email: string, service: string, date: string, time: string, note: string, body: string) {
+  const { file } = await bookingFile(name, email, service, date, time, note);
   if (navigator.canShare?.({ files: [file] })) {
-    await navigator.share({ files: [file], title: "THRIVES booking", text: body });
+    await navigator.share({ files: [file], title: "FUTURET3CH booking", text: body });
     return;
   }
   if (navigator.share) {
-    await navigator.share({ title: "THRIVES booking", text: body });
+    await navigator.share({ title: "FUTURET3CH booking", text: body });
     return;
   }
-  downloadBooking(name, body);
+  downloadBooking(name, email, service, date, time, note);
 }
 
 function Meter() {
@@ -486,7 +487,7 @@ function Ledger() {
   const [rate, setRate] = useState(180);
   const [expenses, setExpenses] = useState(40);
   const [tax, setTax] = useState(10);
-  const [deposit, setDeposit] = useState(40);
+  const [deposit, setDeposit] = useState(50);
   useEffect(() => setJobs(loadJobs()), []);
   const draft = jobTotal({ id: "", client, date: "", hours, rate, expenses, tax, deposit, note: "" });
   const book = jobs.reduce((sum, job) => sum + jobTotal(job).gross, 0);
@@ -528,7 +529,7 @@ function Ledger() {
       <button className="btn" type="button" onClick={() => sendQuote(client, clientEmail, hours, rate, expenses, tax, draft.gross, draft.due)}>
         Send quote
       </button>
-      <button className="btn ghost" type="button" onClick={() => void shareQuote(client, hours, rate, expenses, tax, draft.gross, draft.due)}>
+      <button className="btn ghost" type="button" onClick={() => void shareQuote(client, clientEmail, hours, rate, expenses, tax, deposit, draft.gross, draft.due)}>
         Download and share
       </button>
       <button
@@ -575,8 +576,10 @@ function Ledger() {
 
 function quoteLines(client: string, hours: number, rate: number, expenses: number, tax: number, gross: number, due: number) {
   return [
-    "THRIVES",
-    "Tammy Nguyen, CFO and Lead Photographer",
+    "FUTURET3CH",
+    "J CILIA & T.A NGUYEN",
+    "ABN 26 693 354 742",
+    "futuret3ch.com.au",
     "Tammy.n@futuret3ch.com.au",
     "",
     "Quote",
@@ -603,42 +606,28 @@ function sendQuote(client: string, clientEmail: string, hours: number, rate: num
   window.location.href = href;
 }
 
-async function shareQuote(client: string, hours: number, rate: number, expenses: number, tax: number, gross: number, due: number) {
-  const blob = quotePdf(quoteLines(client, hours, rate, expenses, tax, gross, due));
-  const name = `thrives-quote-${(client || "client").replace(/\s+/g, "-").toLowerCase()}.pdf`;
+async function shareQuote(
+  client: string,
+  clientEmail: string,
+  hours: number,
+  rate: number,
+  expenses: number,
+  tax: number,
+  deposit: number,
+  gross: number,
+  due: number,
+) {
+  const blob = await quotePdfBlob({ kind: "Quote", client, email: clientEmail, hours, rate, expenses, tax, deposit, gross, due });
+  const name = `futuret3ch-quote-${(client || "client").replace(/\s+/g, "-").toLowerCase()}.pdf`;
   const file = new File([blob], name, { type: "application/pdf" });
   if (navigator.canShare?.({ files: [file] })) {
-    await navigator.share({ files: [file], title: "THRIVES quote", text: "Quote from Tammy Nguyen" });
+    await navigator.share({ files: [file], title: "FUTURET3CH quote" });
     return;
   }
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
   link.download = name;
   link.click();
-}
-
-function quotePdf(lines: string[]) {
-  const content = lines
-    .map((line, index) => `BT /F1 12 Tf 48 ${760 - index * 18} Td (${line.replace(/[()\\]/g, " ").replace(/[^\x20-\x7E]/g, " ")}) Tj ET`)
-    .join("\n");
-  const objects = [
-    "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n",
-    "2 0 obj << /Type /Pages /Count 1 /Kids [3 0 R] >> endobj\n",
-    "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >> endobj\n",
-    `4 0 obj << /Length ${content.length} >> stream\n${content}\nendstream endobj\n`,
-    "5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj\n",
-  ];
-  let pdf = "%PDF-1.4\n";
-  const offsets = [0];
-  for (const object of objects) {
-    offsets.push(pdf.length);
-    pdf += object;
-  }
-  const start = pdf.length;
-  pdf += "xref\n0 6\n0000000000 65535 f \n";
-  for (let index = 1; index <= 5; index += 1) pdf += `${String(offsets[index]).padStart(10, "0")} 00000 n \n`;
-  pdf += `trailer << /Size 6 /Root 1 0 R >>\nstartxref\n${start}\n%%EOF`;
-  return new Blob([pdf], { type: "application/pdf" });
 }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
