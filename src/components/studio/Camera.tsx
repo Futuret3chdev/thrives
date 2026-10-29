@@ -9,7 +9,7 @@ const SPEEDS = [1 / 8000, 1 / 4000, 1 / 2000, 1 / 1000, 1 / 500, 1 / 250, 1 / 12
 const STOPS = [1.4, 2, 2.8, 4, 5.6, 8, 11, 16, 22];
 const RATES = [24, 25, 30, 48, 60, 120];
 
-type Mode = "exposure" | "focus" | "monitor" | "capture" | "studio" | "place";
+type Mode = "exposure" | "focus" | "monitor" | "capture" | "studio" | "place" | "look" | "cams";
 type Facing = "user" | "environment";
 
 type Settings = {
@@ -93,6 +93,7 @@ const INITIAL: Settings = {
 export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
   const [settings, setSettings] = useState<Settings>(INITIAL);
   const [mode, setMode] = useState<Mode>("exposure");
+  const [open, setOpen] = useState(false);
   const [live, setLive] = useState(false);
   const [recording, setRecording] = useState(false);
   const [shots, setShots] = useState<Shot[]>([]);
@@ -670,18 +671,13 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
   const speed = settings.lockAngle ? shutterFromAngle(settings.angle, settings.fps) : settings.shutter;
   const canShoot = live || hasFile;
 
+  function pick(next: Mode) {
+    setOpen((on) => (mode === next ? !on : true));
+    setMode(next);
+  }
+
   return (
     <div className="panel" data-dim={settings.dim ? "1" : "0"}>
-      <label className="field">
-        Filter
-        <select value={settings.look} onChange={(event) => patch({ look: event.target.value })}>
-          {LOOKS.map((look) => (
-            <option key={look.id} value={look.id}>
-              {look.group}: {look.name}
-            </option>
-          ))}
-        </select>
-      </label>
       <div className="deck">
       <div className="stage finder">
         <img className="finder-still" src="/plates/melbourne-lane.jpg" alt="A bluestone lane way, Melbourne" />
@@ -689,8 +685,43 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
         <div className="flash" data-on={flash ? "1" : "0"} />
         <video ref={videoRef} className="cam-src" playsInline muted autoPlay />
         <video ref={pipVideoRef} className="pip" playsInline muted autoPlay data-on={secondOn ? "1" : "0"} />
-        <div className="iso-pill">ISO {settings.iso}</div>
+        <div className="hud">
+          <button type="button" aria-label="Back camera" data-on={settings.facing === "environment" ? "1" : "0"} onClick={() => void openCamera("environment")}>
+            <Icon d="M4 8h4l2-2h4l2 2h4v10H4z M12 10a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" />
+          </button>
+          <button type="button" aria-label="Front camera" data-on={settings.facing === "user" ? "1" : "0"} onClick={() => void openCamera("user")}>
+            <Icon d="M12 12a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M6 20v-1a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1" />
+          </button>
+          <button type="button" aria-label="Float the picture" onClick={() => void pictureInPicture()}>
+            <Icon d="M4 6h16v12H4z M13 11h6v6h-6z" />
+          </button>
+          <button type="button" aria-label="Filter" data-on={open && mode === "look" ? "1" : "0"} onClick={() => pick("look")}>
+            <Icon d="M4 5h16l-6 7v6l-4 2v-8z" />
+          </button>
+          <button type="button" aria-label="Exposure" data-on={open && mode === "exposure" ? "1" : "0"} onClick={() => pick("exposure")}>
+            <Icon d="M12 4v2M12 18v2M4 12H6M18 12h2M6 6l1.5 1.5M16.5 16.5 18 18M18 6l-1.5 1.5M7.5 16.5 6 18M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z" />
+          </button>
+          <button type="button" aria-label="Focus" data-on={open && mode === "focus" ? "1" : "0"} onClick={() => pick("focus")}>
+            <Icon d="M8 4H4v4M16 4h4v4M8 20H4v-4M20 16v4h-4" />
+          </button>
+          <button type="button" aria-label="Monitor" data-on={open && mode === "monitor" ? "1" : "0"} onClick={() => pick("monitor")}>
+            <Icon d="M5 19V9M10 19V5M15 19v-7M20 19V8" />
+          </button>
+          <button type="button" aria-label="Capture" data-on={open && mode === "capture" ? "1" : "0"} onClick={() => pick("capture")}>
+            <Icon d="M5 7h14v12H5z M8 7V5h8v2" />
+          </button>
+          <button type="button" aria-label="Place" data-on={open && mode === "place" ? "1" : "0"} onClick={() => pick("place")}>
+            <Icon d="M12 21s6-5.2 6-10a6 6 0 1 0-12 0c0 4.8 6 10 6 10z M12 11a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z" />
+          </button>
+          <button type="button" aria-label="Cameras" data-on={open && mode === "cams" ? "1" : "0"} onClick={() => pick("cams")}>
+            <Icon d="M4 8h3l1-2h8l1 2h3v10H4z" />
+          </button>
+          <button type="button" aria-label="Studio" data-on={open && mode === "studio" ? "1" : "0"} onClick={() => pick("studio")}>
+            <Icon d="M12 7v5l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z" />
+          </button>
+        </div>
         <div className="cam-read">
+          <span>ISO {settings.iso}</span>
           <span>{clock}</span>
           <span>{formatShutter(speed)}</span>
           <span>f/{settings.aperture}</span>
@@ -752,57 +783,41 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
       </div>
       </div>
 
-      <div className="cam-pick">
-        <p>Camera</p>
-        <div className="tools">
-          <button type="button" data-on={settings.facing === "environment" && !primaryId ? "1" : "0"} onClick={() => void openCamera("environment")}>
-            Back
-          </button>
-          <button type="button" data-on={settings.facing === "user" && !primaryId ? "1" : "0"} onClick={() => void openCamera("user")}>
-            Front
-          </button>
-          {cams.map((cam, index) => (
-            <button key={cam.deviceId} type="button" data-on={primaryId === cam.deviceId ? "1" : "0"} onClick={() => void openCamera(facingOf(cam), cam.deviceId)}>
-              {cameraName(cam, index)}
+      {open && mode === "look" && (
+        <label className="field">
+          Filter
+          <select value={settings.look} onChange={(event) => patch({ look: event.target.value })}>
+            {LOOKS.map((look) => (
+              <option key={look.id} value={look.id}>
+                {look.group}: {look.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+
+      {open && mode === "cams" && (
+        <div className="fields">
+          <div className="tools">
+            {cams.map((cam, index) => (
+              <button key={cam.deviceId} type="button" data-on={primaryId === cam.deviceId ? "1" : "0"} onClick={() => void openCamera(facingOf(cam), cam.deviceId)}>
+                {cameraName(cam, index)}
+              </button>
+            ))}
+            <button type="button" data-on={secondId ? "0" : "1"} onClick={() => void openSecond("")}>
+              Second off
             </button>
-          ))}
+            {cams.map((cam, index) => (
+              <button key={`b-${cam.deviceId}`} type="button" data-on={secondId === cam.deviceId ? "1" : "0"} onClick={() => void openSecond(cam.deviceId)}>
+                Second · {cameraName(cam, index)}
+              </button>
+            ))}
+          </div>
+          {cams.length === 0 && <p className="lens-note">Tap the camera icon. The phone asks, then each camera is listed.</p>}
         </div>
-        <p>Second camera</p>
-        <div className="tools">
-          <button type="button" data-on={secondId ? "0" : "1"} onClick={() => void openSecond("")}>
-            Off
-          </button>
-          {cams.map((cam, index) => (
-            <button key={cam.deviceId} type="button" data-on={secondId === cam.deviceId ? "1" : "0"} onClick={() => void openSecond(cam.deviceId)}>
-              {cameraName(cam, index)}
-            </button>
-          ))}
-        </div>
-        {cams.length === 0 && <p className="lens-note">Tap Back or Front. The phone asks permission, then every camera it has is listed here.</p>}
-      </div>
+      )}
 
-      <button className="btn ghost" type="button" onClick={() => void pictureInPicture()}>
-        Float the picture
-      </button>
-
-      <div className="tools" role="tablist">
-        {(
-          [
-            ["exposure", "Exposure"],
-            ["focus", "Focus"],
-            ["monitor", "Monitor"],
-            ["capture", "Capture"],
-            ["studio", "Studio"],
-            ["place", "Place"],
-          ] as const
-        ).map(([id, label]) => (
-          <button key={id} type="button" data-on={mode === id ? "1" : "0"} onClick={() => setMode(id)}>
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {mode === "exposure" && (
+      {open && mode === "exposure" && (
         <div className="fields">
           <Range label={`ISO ${settings.iso}`} min={0} max={ISOS.length - 1} step={1} value={ISOS.indexOf(settings.iso)} onChange={(index) => patch({ iso: ISOS[index] ?? 100 })} />
           <Range label={`Shutter ${formatShutter(speed)}`} min={0} max={SPEEDS.length - 1} step={1} value={Math.max(0, SPEEDS.indexOf(settings.shutter))} disabled={settings.lockAngle} onChange={(index) => patch({ shutter: SPEEDS[index] ?? 1 / 125 })} />
@@ -825,7 +840,7 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
         </div>
       )}
 
-      {mode === "focus" && (
+      {open && mode === "focus" && (
         <div className="fields">
           <Range label="Manual focus" min={0} max={1} step={0.01} value={settings.focus} onChange={(focus) => patch({ focus })} />
           <Check label="Focus peaking" on={settings.peaking} set={(peaking) => patch({ peaking })} />
@@ -848,7 +863,7 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
         </div>
       )}
 
-      {mode === "monitor" && (
+      {open && mode === "monitor" && (
         <div className="fields">
           <div className="scopes">
             <canvas ref={histRef} width={320} height={96} />
@@ -906,7 +921,7 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
         </div>
       )}
 
-      {mode === "capture" && (
+      {open && mode === "capture" && (
         <div className="fields">
           <Range label={`Master bitrate ${settings.bitrate} Mb/s`} min={4} max={80} step={1} value={settings.bitrate} onChange={(bitrate) => patch({ bitrate })} />
           <Check label="Save a proxy JPEG as well" on={settings.proxy} set={(proxy) => patch({ proxy })} />
@@ -945,12 +960,8 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
         </div>
       )}
 
-      {mode === "studio" && (
+      {open && mode === "studio" && (
         <div className="fields">
-          <button className="btn" type="button" onClick={() => void pictureInPicture()}>
-            Float the picture
-          </button>
-          <p className="lens-note">Keeps the camera picture on top of your other apps. There is no server to set up. Open the camera first.</p>
           <label className="field">
             Jam timecode
             <input value={jamText} onChange={(event) => setJamText(event.target.value)} />
@@ -962,7 +973,7 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
         </div>
       )}
 
-      {mode === "place" && (
+      {open && mode === "place" && (
         <div className="fields">
           {shown ? (
             <article className="card">
@@ -1047,6 +1058,14 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
       taken: new Date().toISOString(),
     };
   }
+}
+
+function Icon({ d }: { d: string }) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={d} />
+    </svg>
+  );
 }
 
 function cameraName(cam: MediaDeviceInfo, index: number) {
