@@ -107,11 +107,47 @@ export function BookForm() {
         Notes
         <input value={note} onChange={(event) => setNote(event.target.value)} placeholder="Place, people, what the picture is for" />
       </label>
-      <a className="btn" href={href}>
-        Email Tammy and yourself
-      </a>
+      <div className="quote-actions">
+        <a className="btn" href={href}>
+          Email quote
+        </a>
+        <button className="btn ghost" type="button" onClick={() => downloadBooking(name, body)}>
+          Download
+        </button>
+        <button className="btn ghost" type="button" onClick={() => void shareBooking(name, body)}>
+          Share
+        </button>
+      </div>
     </form>
   );
+}
+
+function bookingFile(name: string, body: string) {
+  const lines = ["THRIVES", "Booking", "", ...body.split("\n")];
+  const blob = quotePdf(lines);
+  const fileName = `thrives-booking-${(name || "client").replace(/\s+/g, "-").toLowerCase()}.pdf`;
+  return { blob, fileName, file: new File([blob], fileName, { type: "application/pdf" }) };
+}
+
+function downloadBooking(name: string, body: string) {
+  const { blob, fileName } = bookingFile(name, body);
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.download = fileName;
+  link.click();
+}
+
+async function shareBooking(name: string, body: string) {
+  const { file } = bookingFile(name, body);
+  if (navigator.canShare?.({ files: [file] })) {
+    await navigator.share({ files: [file], title: "THRIVES booking", text: body });
+    return;
+  }
+  if (navigator.share) {
+    await navigator.share({ title: "THRIVES booking", text: body });
+    return;
+  }
+  downloadBooking(name, body);
 }
 
 function Meter() {

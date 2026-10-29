@@ -216,6 +216,21 @@
   color: var(--color-ink);
 }
 
+.quote-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.quote-actions .btn {
+  min-width: 0;
+  padding: 0 0.35rem;
+  font-size: 0.78rem;
+  text-align: center;
+  text-decoration: none;
+}
+
 .plate {
   position: relative;
   overflow: hidden;
