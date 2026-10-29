@@ -118,9 +118,10 @@
 .nav {
   grid-column: 1 / -1;
   grid-row: 2;
-  display: flex;
-  gap: 0.25rem;
-  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.15rem;
+  overflow: hidden;
   width: 100%;
   min-width: 0;
 }
@@ -131,13 +132,17 @@
   background: transparent;
   color: var(--color-ink);
   font: inherit;
-  font-size: 0.82rem;
-  min-height: 2.75rem;
-  padding: 0 0.7rem;
+  font-size: 0.68rem;
+  min-height: 2.05rem;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0 0.1rem;
   border-radius: 999px;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 .nav button[data-on="1"] {
@@ -255,6 +260,9 @@
 
 .section {
   padding: 1.5rem 1rem 0.5rem;
+  min-width: 0;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 .section h2 {
@@ -553,6 +561,8 @@ textarea {
   border: 1px solid var(--color-line);
   border-radius: 0.7rem;
   min-height: 2.75rem;
+  min-width: 0;
+  max-width: 100%;
   padding: 0.4rem 0.7rem;
   width: 100%;
   box-sizing: border-box;
