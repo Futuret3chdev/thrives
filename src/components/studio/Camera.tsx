@@ -114,6 +114,7 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
   const [hasFile, setHasFile] = useState(false);
   const [secondOn, setSecondOn] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [flash, setFlash] = useState(false);
 
   const settingsRef = useRef(settings);
   const biasRef = useRef(0);
@@ -666,13 +667,15 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
 
   return (
     <div className="panel" data-dim={settings.dim ? "1" : "0"}>
+      <div className="deck">
       <div className="stage finder">
         <canvas ref={viewRef} />
+        <div className="flash" data-on={flash ? "1" : "0"} />
         <video ref={videoRef} className="cam-src" playsInline muted autoPlay />
         <video ref={pipVideoRef} className="pip" playsInline muted autoPlay data-on={secondOn ? "1" : "0"} />
-        <div className="tc">{clock}</div>
+        <div className="iso-pill">ISO {settings.iso}</div>
         <div className="cam-read">
-          <span>ISO {settings.iso}</span>
+          <span>{clock}</span>
           <span>{formatShutter(speed)}</span>
           <span>f/{settings.aperture}</span>
           <span>{settings.kelvin}K</span>
@@ -689,36 +692,49 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
             <p>{placeNote}</p>
           )}
         </div>
-        {!live && !hasFile && <p className="camera-wait">Open the camera, or load a digital file.</p>}
+        {!live && !hasFile && <p className="camera-wait">Tap the shutter. The phone will ask for the camera.</p>}
       </div>
-
-      {error && <p>{error}</p>}
-      <p className="lens-note">{lens}</p>
-
-      <div className="shut-row">
-        {!live && (
-          <button className="btn" type="button" onClick={() => openCamera(settings.facing)}>
-            Open camera
+      <div className="control-panel">
+        <div className="interface-actions">
+          <label className="gallery-node">
+            {shots[0] && !shots[0].blob.type.startsWith("video") ? <img src={shots[0].url} alt="" /> : <span>File</span>}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/heic,.jpg,.jpeg,.png,.webp,.heic"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) loadFile(file);
+              }}
+            />
+          </label>
+          <button
+            className="shut"
+            type="button"
+            aria-label="Take photo"
+            data-rec={recording ? "1" : "0"}
+            disabled={busy}
+            onClick={() => {
+              if (!canShoot) {
+                void openCamera(settings.facing);
+                return;
+              }
+              setFlash(true);
+              window.setTimeout(() => setFlash(false), 280);
+              void shoot("Frame", true);
+            }}
+          >
+            <span className="shut-inner" />
           </button>
-        )}
-        <button className="btn ghost" type="button" onClick={() => openCamera(settings.facing === "user" ? "environment" : "user")}>
-          Flip
-        </button>
-        <button className="shut" type="button" aria-label="Take photo" disabled={!canShoot || busy} onClick={() => void shoot("Frame", true)} />
-        <button className="rec" type="button" data-on={recording ? "1" : "0"} onClick={() => void toggleRec()}>
+          <button className="utility-btn" type="button" aria-label="Flip camera" onClick={() => void openCamera(settings.facing === "user" ? "environment" : "user")}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+            </svg>
+          </button>
+        </div>
+        <button className="rec deck-rec" type="button" data-on={recording ? "1" : "0"} onClick={() => void toggleRec()}>
           {recording ? "Stop" : "Rec"}
         </button>
-        <label className="file-btn">
-          File
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp,image/heic,.jpg,.jpeg,.png,.webp,.heic"
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) loadFile(file);
-            }}
-          />
-        </label>
+      </div>
       </div>
 
       <div className="cam-pick">
