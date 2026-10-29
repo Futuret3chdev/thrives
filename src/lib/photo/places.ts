@@ -125,12 +125,17 @@ async function osmPlaces(lat: number, lon: number): Promise<PlaceHit[]> {
 async function herePlace(lat: number, lon: number): Promise<PlaceHit[]> {
   const url = `https://photon.komoot.io/reverse?lat=${lat}&lon=${lon}&limit=8`;
   const json = (await getJson(url)) as {
-    features?: { properties?: { name?: string; street?: string; city?: string; osm_value?: string; osm_key?: string } }[];
+    features?: {
+      geometry?: { coordinates?: [number, number] };
+      properties?: { name?: string; street?: string; city?: string; osm_value?: string; osm_key?: string };
+    }[];
   };
   return (json.features ?? []).flatMap((feature, index) => {
     const props = feature.properties ?? {};
     const name = props.name || props.street;
-    if (!name) return [];
+    const coords = feature.geometry?.coordinates;
+    if (!name || !coords) return [];
+    const [placeLon, placeLat] = coords;
     const kind = props.osm_value || props.osm_key || "place";
     return [
       {
@@ -138,9 +143,9 @@ async function herePlace(lat: number, lon: number): Promise<PlaceHit[]> {
         name,
         year: "",
         about: props.city ? `${name} · ${props.city}. Recorded as ${kind}.` : `${name} is the nearest named place.`,
-        lat,
-        lon,
-        distance: index * 12,
+        lat: placeLat,
+        lon: placeLon,
+        distance: haversine(lat, lon, placeLat, placeLon),
         href: "",
       },
     ];
@@ -160,6 +165,10 @@ function bearing(lat1: number, lon1: number, lat2: number, lon2: number) {
   const y = Math.sin(Δλ) * Math.cos(φ2);
   const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
   return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}
+
+export function placeBearing(lat1: number, lon1: number, lat2: number, lon2: number) {
+  return bearing(lat1, lon1, lat2, lon2);
 }
 
 function haversine(lat1: number, lon1: number, lat2: number, lon2: number) {

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { formatShutter } from "@/lib/photo/calc";
 import { averageLuma, gradeFrame, shutterFromAngle, type Flags, type Grade, type Lut, type Scopes } from "@/lib/photo/optics";
 import { LOOKS } from "@/lib/photo/looks";
-import { aimPlace, loadPlaces, type PlaceHit } from "@/lib/photo/places";
+import { aimPlace, loadPlaces, placeBearing, type PlaceHit } from "@/lib/photo/places";
 
 const ISOS = [50, 100, 200, 400, 800, 1600, 3200, 6400, 12800];
 const SPEEDS = [1 / 8000, 1 / 4000, 1 / 2000, 1 / 1000, 1 / 500, 1 / 250, 1 / 125, 1 / 60, 1 / 30, 1 / 15, 1 / 8, 1 / 4, 1 / 2, 1, 2];
@@ -115,6 +115,8 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
   const [secondOn, setSecondOn] = useState(false);
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState(false);
+  const [here, setHere] = useState<{ lat: number; lon: number } | null>(null);
+  const [heading, setHeading] = useState<number | null>(null);
 
   const settingsRef = useRef(settings);
   const biasRef = useRef(0);
@@ -267,7 +269,9 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
       const apple = (event as DeviceOrientationEvent & { webkitCompassHeading?: number }).webkitCompassHeading;
       const heading = apple ?? (event.alpha == null ? null : (360 - event.alpha + 360) % 360);
       if (heading == null) return;
+      const previous = headingRef.current;
       headingRef.current = heading;
+      if (previous == null || Math.abs(previous - heading) > 8) setHeading(heading);
       retarget();
     };
     window.addEventListener("deviceorientation", onOrient);
@@ -280,6 +284,7 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
         const here = { lat: position.coords.latitude, lon: position.coords.longitude };
         const previous = hereRef.current;
         hereRef.current = here;
+        setHere(here);
         const moved = !previous || haversine(previous.lat, previous.lon, here.lat, here.lon) > 40;
         if (moved) void refreshPlaces(here.lat, here.lon);
         else retarget();
@@ -667,9 +672,20 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
 
   return (
     <div className="panel" data-dim={settings.dim ? "1" : "0"}>
+      <label className="field">
+        Filter
+        <select value={settings.look} onChange={(event) => patch({ look: event.target.value })}>
+          {LOOKS.map((look) => (
+            <option key={look.id} value={look.id}>
+              {look.group}: {look.name}
+            </option>
+          ))}
+        </select>
+      </label>
       <div className="deck">
       <div className="stage finder">
-        <canvas ref={viewRef} />
+        <img className="finder-still" src="/plates/melbourne-lane.jpg" alt="A bluestone lane way, Melbourne" />
+        <canvas ref={viewRef} data-on={live || hasFile ? "1" : "0"} />
         <div className="flash" data-on={flash ? "1" : "0"} />
         <video ref={videoRef} className="cam-src" playsInline muted autoPlay />
         <video ref={pipVideoRef} className="pip" playsInline muted autoPlay data-on={secondOn ? "1" : "0"} />
@@ -685,14 +701,13 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
           {shown ? (
             <>
               <b>{shown.name}</b>
-              <em>{shown.year || "Year unrecorded"}</em>
-              <p>{shown.about}</p>
+              <em>{shown.year || `${Math.round(shown.distance)} m`}</em>
+              {here && <Lead here={here} place={shown} heading={heading} />}
             </>
           ) : (
             <p>{placeNote}</p>
           )}
         </div>
-        {!live && !hasFile && <p className="camera-wait">Tap the shutter. The phone will ask for the camera.</p>}
       </div>
       <div className="control-panel">
         <div className="interface-actions">
@@ -765,17 +780,6 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
         </div>
         {cams.length === 0 && <p className="lens-note">Tap Back or Front. The phone asks permission, then every camera it has is listed here.</p>}
       </div>
-
-      <label className="field">
-        Filter
-        <select value={settings.look} onChange={(event) => patch({ look: event.target.value })}>
-          {LOOKS.map((look) => (
-            <option key={look.id} value={look.id}>
-              {look.group}: {look.name}
-            </option>
-          ))}
-        </select>
-      </label>
 
       <button className="btn ghost" type="button" onClick={() => void pictureInPicture()}>
         Float the picture
@@ -967,6 +971,7 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
                 {shown.year || "Year unrecorded"} · {Math.round(shown.distance)} m
               </p>
               <p>{shown.about}</p>
+              {here && <Lead here={here} place={shown} heading={heading} />}
               {shown.href && (
                 <a href={shown.href} target="_blank" rel="noreferrer">
                   Read the entry
@@ -1208,6 +1213,19 @@ async function bake(
   proxyCanvas.getContext("2d")?.drawImage(canvas, 0, 0, proxyCanvas.width, proxyCanvas.height);
   const proxy = await blobOf(proxyCanvas, "image/jpeg", 0.8);
   return { jpeg, png, proxy, pixels: frame.data };
+}
+
+function Lead({ here, place, heading }: { here: { lat: number; lon: number }; place: PlaceHit; heading: number | null }) {
+  const face = placeBearing(here.lat, here.lon, place.lat, place.lon);
+  const turn = heading == null ? 0 : (face - heading + 360) % 360;
+  const href = `https://maps.apple.com/?daddr=${place.lat},${place.lon}&dirflg=w`;
+  const words = heading == null ? "Open directions" : turn < 20 || turn > 340 ? "Straight ahead" : turn < 180 ? "Turn right" : "Turn left";
+  return (
+    <a className="lead" href={href} target="_blank" rel="noreferrer">
+      <i style={{ transform: `rotate(${turn}deg)` }} />
+      {words} · {Math.round(place.distance)} m
+    </a>
+  );
 }
 
 function stamp(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, mark: string) {
