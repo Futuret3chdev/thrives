@@ -90,11 +90,16 @@ const INITIAL: Settings = {
   facing: "environment",
 };
 
-export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
+export function Camera({ onEdit, onBench }: { onEdit: (url: string) => void; onBench: (tool: "Darkroom" | "Meter" | "Focus" | "Grade" | "Frame") => void }) {
   const [settings, setSettings] = useState<Settings>(INITIAL);
   const [mode, setMode] = useState<Mode>("exposure");
   const [open, setOpen] = useState(false);
   const [more, setMore] = useState(false);
+  const [hudOn, setHudOn] = useState(true);
+  const [full, setFull] = useState(false);
+  const [wide, setWide] = useState(false);
+  const [stats, setStats] = useState({ mid: 0, hi: 0, lo: 0 });
+  const statsRef = useRef(stats);
   const [live, setLive] = useState(false);
   const [recording, setRecording] = useState(false);
   const [shots, setShots] = useState<Shot[]>([]);
@@ -456,6 +461,15 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
     paintHist(histRef.current, [scopes.luma, scopes.red, scopes.green, scopes.blue]);
     paintWave(waveRef.current, scopes.wave);
     paintVector(vectorRef.current, scopes.vector);
+    const total = scopes.luma.reduce((sum, value) => sum + value, 0) || 1;
+    const hi = scopes.luma.slice(-3).reduce((sum, value) => sum + value, 0) / total;
+    const lo = scopes.luma.slice(0, 3).reduce((sum, value) => sum + value, 0) / total;
+    const mid = scopes.luma.reduce((sum, value, index) => sum + value * index, 0) / total / Math.max(1, scopes.luma.length - 1);
+    if (Math.abs(mid - statsRef.current.mid) > 0.04 || Math.abs(hi - statsRef.current.hi) > 0.03) {
+      const next = { mid, hi, lo };
+      statsRef.current = next;
+      setStats(next);
+    }
   }
 
   function drawVu() {
@@ -621,19 +635,20 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
     }
     const withMode = video as HTMLVideoElement & { webkitSetPresentationMode?: (mode: "picture-in-picture" | "inline") => void };
     try {
-      if (document.pictureInPictureEnabled) {
-        await video.requestPictureInPicture();
-        setError(null);
-        setLens("The picture is floating. Tap it to come back to the bench.");
-        return;
-      }
+      await video.play();
       if (withMode.webkitSetPresentationMode) {
-        withMode.webkitSetPresentationMode("picture-in-picture");
+        withMode.webkitSetPresentationMode(document.pictureInPictureElement ? "inline" : "picture-in-picture");
         setError(null);
-        setLens("The picture is floating. Tap it to come back to the bench.");
+        setLens("The picture is floating.");
         return;
       }
-      setError("This phone will not float the picture. It stays in the bench.");
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+        return;
+      }
+      await video.requestPictureInPicture();
+      setError(null);
+      setLens("The picture is floating.");
     } catch {
       setError("This phone will not float the picture. It stays in the bench.");
     }
@@ -679,13 +694,14 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
 
   return (
     <div className="panel" data-dim={settings.dim ? "1" : "0"}>
-      <div className="deck">
+      <div className="deck" data-full={full ? "1" : "0"} data-wide={wide ? "1" : "0"}>
       <div className="stage finder">
         <img className="finder-still" src="/plates/melbourne-lane.jpg" alt="A bluestone lane way, Melbourne" />
         <canvas ref={viewRef} data-on={live || hasFile ? "1" : "0"} />
         <div className="flash" data-on={flash ? "1" : "0"} />
         <video ref={videoRef} className="cam-src" playsInline muted autoPlay />
         <video ref={pipVideoRef} className="pip" playsInline muted autoPlay data-on={secondOn ? "1" : "0"} />
+        {hudOn ? (
         <div className="hud">
           <button type="button" aria-label="Back camera" data-on={settings.facing === "environment" ? "1" : "0"} onClick={() => void openCamera("environment")}>
             <Icon d="M4 8h4l2-2h4l2 2h4v10H4z M12 10a3 3 0 1 0 0 6 3 3 0 0 0 0-6z" />
@@ -725,9 +741,38 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
           <button type="button" aria-label="Studio" data-on={open && mode === "studio" ? "1" : "0"} onClick={() => pick("studio")}>
             <Icon d="M12 7v5l3 2M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z" />
           </button>
+          <button type="button" aria-label="Darkroom" onClick={() => onBench("Darkroom")}>
+            <Icon d="M4 6h16v12H4z M8 10h8v4H8z" />
+          </button>
+          <button type="button" aria-label="Meter" onClick={() => onBench("Meter")}>
+            <Icon d="M5 19V8M10 19V5M15 19v-6M20 19V9" />
+          </button>
+          <button type="button" aria-label="Grade" onClick={() => onBench("Grade")}>
+            <Icon d="M4 16l4-8 4 5 3-3 5 6" />
+          </button>
+          <button type="button" aria-label="Frame" onClick={() => onBench("Frame")}>
+            <Icon d="M4 4h6v2H6v4H4z M14 4h6v6h-2V6h-4z M4 14h2v4h4v2H4z M18 14h2v6h-6v-2h4z" />
+          </button>
+          <button type="button" aria-label="Depth of field" onClick={() => onBench("Focus")}>
+            <Icon d="M4 12h16M12 4v16" />
+          </button>
+          <button type="button" aria-label="Full screen" data-on={full ? "1" : "0"} onClick={() => setFull((on) => !on)}>
+            <Icon d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+          </button>
+          <button type="button" aria-label="Landscape" data-on={wide ? "1" : "0"} onClick={() => setWide((on) => !on)}>
+            <Icon d="M3 8h18v8H3z" />
+          </button>
+          <button type="button" aria-label="Hide icons" onClick={() => setHudOn(false)}>
+            <Icon d="M4 12h16" />
+          </button>
             </>
           )}
         </div>
+        ) : (
+          <button className="hud-back" type="button" aria-label="Show icons" onClick={() => setHudOn(true)}>
+            <Icon d="M5 12h.01M12 12h.01M19 12h.01" />
+          </button>
+        )}
         <div className="cam-read">
           <span>ISO {settings.iso}</span>
           <span>{clock}</span>
@@ -739,7 +784,7 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
         <div className="place-card">
           {shown ? (
             <>
-              <b>{shown.name}</b>
+              <b><i className="pin" /> {shown.name}</b>
               <em>{shown.year || `${Math.round(shown.distance)} m`}</em>
               {here && <Lead here={here} place={shown} heading={heading} />}
             </>
@@ -788,22 +833,31 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
         <button className="rec deck-rec" type="button" data-on={recording ? "1" : "0"} onClick={() => void toggleRec()}>
           {recording ? "Stop" : "Rec"}
         </button>
+        {full && (
+          <button className="btn ghost deck-rec" type="button" onClick={() => setFull(false)}>
+            Leave full screen
+          </button>
+        )}
       </div>
       </div>
 
       {open && (
-      <div className="sheet">
+      <div className="desk" data-place={mode === "place" ? "1" : "0"}>
       {mode === "look" && (
-        <label className="field">
-          Filter
-          <select value={settings.look} onChange={(event) => patch({ look: event.target.value })}>
-            {LOOKS.map((look) => (
-              <option key={look.id} value={look.id}>
-                {look.group}: {look.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="fields">
+          {(["Style", "Lens"] as const).map((group) => (
+            <div key={group}>
+              <p className="lens-note">{group === "Lens" ? "Lens filters" : "Looks"}</p>
+              <div className="chips">
+                {LOOKS.filter((look) => look.group === group).map((look) => (
+                  <button key={look.id} type="button" data-on={settings.look === look.id ? "1" : "0"} onClick={() => patch({ look: look.id })}>
+                    {look.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       )}
 
       {mode === "cams" && (
@@ -884,7 +938,9 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
             <canvas ref={waveRef} width={320} height={96} />
             <canvas ref={vectorRef} width={160} height={160} />
           </div>
-          <p className="lens-note">Histogram, waveform, vectorscope. The thin bar on the vectorscope is the microphone.</p>
+          <p className="lens-note">
+            Histogram is white, red, green and blue. Middle grey {Math.round(stats.mid * 100)}%. Highlights clipping {Math.round(stats.hi * 100)}%. Shadows crushed {Math.round(stats.lo * 100)}%. Waveform is brightness across the frame. Vectorscope is colour. The bar is the microphone.
+          </p>
           <label className="field">
             Look
             <select value={settings.lut} onChange={(event) => patch({ lut: event.target.value as Lut })}>
@@ -991,7 +1047,7 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
         <div className="fields">
           {shown ? (
             <article className="card">
-              <h3>{shown.name}</h3>
+              <h3><i className="pin" /> {shown.name}</h3>
               <p>
                 {shown.year || "Year unrecorded"} · {Math.round(shown.distance)} m
               </p>
@@ -1314,6 +1370,9 @@ function paintHist(canvas: HTMLCanvasElement | null, series: number[][]) {
   if (!ctx) return;
   const { width, height } = canvas;
   ctx.clearRect(0, 0, width, height);
+  ctx.fillStyle = "rgba(243,238,230,0.9)";
+  ctx.font = "11px sans-serif";
+  ctx.fillText("Luma  red  green  blue", 6, 12);
   const colors = ["rgba(243,238,230,0.9)", "rgba(180,70,60,0.8)", "rgba(70,140,80,0.8)", "rgba(70,110,170,0.8)"];
   series.forEach((bins, index) => {
     ctx.fillStyle = colors[index] ?? colors[0]!;
@@ -1328,6 +1387,9 @@ function paintWave(canvas: HTMLCanvasElement | null, wave: number[]) {
   if (!ctx) return;
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.strokeStyle = "rgba(243,238,230,0.95)";
+  ctx.fillStyle = "rgba(243,238,230,0.8)";
+  ctx.font = "11px sans-serif";
+  ctx.fillText("Waveform across the frame", 6, 12);
   ctx.beginPath();
   wave.forEach((value, index) => {
     const x = (index / Math.max(1, wave.length - 1)) * canvas.width;

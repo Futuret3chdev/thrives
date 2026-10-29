@@ -80,7 +80,8 @@
   align-self: start;
 }
 
-.socials a {
+.socials a,
+.socials .book-mark {
   width: 2.75rem;
   height: 2.75rem;
   display: grid;
@@ -93,7 +94,8 @@
 }
 
 .socials .ig-mark svg,
-.socials .mail-mark svg {
+.socials .mail-mark svg,
+.socials .book-mark svg {
   width: 2.15rem;
   height: 2.15rem;
   display: block;
@@ -370,26 +372,122 @@
   order: 2;
 }
 
-.sheet {
+.desk {
   order: 1;
-  background: rgba(28, 23, 18, 0.78);
-  color: #f3eee6;
+  background: #1b1e24;
+  color: #e7e4de;
+  border: 1px solid #323844;
   border-radius: 0.9rem;
   padding: 0.75rem;
-  backdrop-filter: blur(12px);
   max-height: 38vh;
   overflow: auto;
 }
 
-.sheet .field,
-.sheet .lens-note,
-.sheet p,
-.sheet h3 {
-  color: #f3eee6;
+.desk .field,
+.desk .lens-note,
+.desk p,
+.desk h3,
+.desk label {
+  color: #e7e4de;
 }
 
-.sheet .lead {
+.desk input,
+.desk select {
+  background: #2a303a;
   color: #f3eee6;
+  border: 1px solid #3c4450;
+}
+
+.desk[data-place="1"] {
+  background: #f6f3ee;
+  color: #1c1712;
+  border-color: #e4ddd2;
+}
+
+.desk[data-place="1"] .field,
+.desk[data-place="1"] .lens-note,
+.desk[data-place="1"] p,
+.desk[data-place="1"] h3,
+.desk[data-place="1"] .btn,
+.desk[data-place="1"] button {
+  color: #1c1712;
+}
+
+.desk[data-place="1"] .lead {
+  color: #c0392b;
+}
+
+.pin {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  margin-right: 0.35rem;
+  border-radius: 50% 50% 50% 0;
+  background: #e23b2f;
+  transform: rotate(-45deg);
+  vertical-align: 0.05rem;
+}
+
+.place-card .lead {
+  color: #ff5a4f;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.chips button {
+  border: 1px solid #3c4450;
+  background: #2a303a;
+  color: #f3eee6;
+  border-radius: 999px;
+  min-height: 2rem;
+  padding: 0.2rem 0.65rem;
+  font: inherit;
+  font-size: 0.78rem;
+}
+
+.chips button[data-on="1"] {
+  background: #f3eee6;
+  color: #1c1712;
+}
+
+.hud-back {
+  position: absolute;
+  right: 0.55rem;
+  bottom: 0.55rem;
+  z-index: 5;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 999px;
+  border: 0;
+  background: #fff;
+  color: #111;
+  display: grid;
+  place-items: center;
+}
+
+.deck[data-full="1"] {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  border-radius: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.deck[data-full="1"] .finder-still,
+.deck[data-wide="1"] .finder-still {
+  height: auto;
+  aspect-ratio: 16 / 9;
+  flex: 1;
+}
+
+.under-cam {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
 }
 
 .shots {
