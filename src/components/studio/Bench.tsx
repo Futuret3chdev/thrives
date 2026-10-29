@@ -17,6 +17,7 @@ import {
   sunDay,
   crossHour,
 } from "@/lib/photo/calc";
+import { LOOKS, applyLook } from "@/lib/photo/looks";
 import { Camera } from "./Camera";
 import { Darkroom } from "./Darkroom";
 
@@ -157,6 +158,7 @@ function Grade() {
   const [contrast, setContrast] = useState(1);
   const [warmth, setWarmth] = useState(8);
   const [fade, setFade] = useState(0.08);
+  const [look, setLook] = useState("none");
   const canvas = useRef<HTMLCanvasElement>(null);
   const [bins, setBins] = useState<number[]>(Array.from({ length: 32 }, () => 0));
 
@@ -191,6 +193,9 @@ function Grade() {
         r = r * (1 - fade) + fade * 0.92;
         g = g * (1 - fade) + fade * 0.86;
         b = b * (1 - fade) + fade * 0.74;
+        const px = (i / 4) % node.width;
+        const py = Math.floor(i / 4 / node.width);
+        [r, g, b] = applyLook(r, g, b, look, px / node.width, py / node.height);
         data[i] = clampByte(r * 255);
         data[i + 1] = clampByte(g * 255);
         data[i + 2] = clampByte(b * 255);
@@ -201,7 +206,7 @@ function Grade() {
       setBins(next.map((n) => n / peak));
       ctx.putImageData(frame, 0, 0);
     }
-  }, [url, exposure, contrast, warmth, fade]);
+  }, [url, exposure, contrast, warmth, fade, look]);
 
   return (
     <div className="panel">
@@ -232,6 +237,15 @@ function Grade() {
         </Field>
         <Field label={`Warmth ${warmth}`}>
           <input type="range" min={-40} max={40} step={1} value={warmth} onChange={(e) => setWarmth(Number(e.target.value))} />
+        </Field>
+        <Field label="Filter">
+          <select value={look} onChange={(e) => setLook(e.target.value)}>
+            {LOOKS.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.group}: {item.name}
+              </option>
+            ))}
+          </select>
         </Field>
         <Field label="Fade">
           <input type="range" min={0} max={0.45} step={0.01} value={fade} onChange={(e) => setFade(Number(e.target.value))} />
@@ -265,23 +279,23 @@ function Frame() {
   const need = printNeed(printW, printH, dpi);
   return (
     <div className="panel">
-      <div className="stage">
-        <img src="/plates/warehouse.jpg" alt="Warehouse row with a crop guide" />
-        <svg className="overlay" viewBox="0 0 100 66.6" preserveAspectRatio="none">
+      <div className="stage frame-stage" style={{ aspectRatio: `${spec.w} / ${spec.h}` }}>
+        <img src="/plates/melbourne-lane.jpg" alt="A bluestone lane way, Melbourne, with a crop guide" />
+        <svg className="overlay" viewBox="0 0 100 100" preserveAspectRatio="none">
           {guide === "thirds" && (
-            <g stroke="#f3eee6" strokeWidth="0.35" opacity="0.85">
-              <path d="M33.3 0 v66.6 M66.6 0 v66.6 M0 22.2 h100 M0 44.4 h100" />
+            <g stroke="#f3eee6" strokeWidth="0.6" opacity="0.85">
+              <path d="M33.3 0 v100 M66.6 0 v100 M0 33.3 h100 M0 66.6 h100" />
             </g>
           )}
           {guide === "golden" && (
-            <g stroke="#c4a27a" strokeWidth="0.4" fill="none">
-              <rect x="0" y="0" width="61.8" height="66.6" />
-              <rect x="61.8" y="0" width="38.2" height="41.2" />
+            <g stroke="#c4a27a" strokeWidth="0.7" fill="none">
+              <rect x="0" y="0" width="61.8" height="61.8" />
+              <rect x="61.8" y="0" width="38.2" height="38.2" />
             </g>
           )}
           {guide === "diagonal" && (
-            <g stroke="#f3eee6" strokeWidth="0.35">
-              <path d="M0 66.6 L100 0 M0 0 L100 66.6" />
+            <g stroke="#f3eee6" strokeWidth="0.6">
+              <path d="M0 100 L100 0 M0 0 L100 100" />
             </g>
           )}
         </svg>

@@ -86,13 +86,17 @@
   display: grid;
   place-items: center;
   color: var(--color-ink);
-  border: 1px solid var(--color-line);
+  border: 0;
+  background: transparent;
   border-radius: 999px;
+  padding: 0;
 }
 
-.socials svg {
-  width: 1.2rem;
-  height: 1.2rem;
+.socials .ig-mark svg,
+.socials .mail-mark svg {
+  width: 2.15rem;
+  height: 2.15rem;
+  display: block;
 }
 
 .brand b {
@@ -434,6 +438,16 @@ textarea {
   display: block;
 }
 
+.frame-stage {
+  min-height: 0;
+  width: 100%;
+}
+
+.frame-stage img {
+  height: 100%;
+  object-fit: cover;
+}
+
 .overlay {
   position: absolute;
   inset: 0;
@@ -723,13 +737,37 @@ textarea {
   gap: 0.7rem;
 }
 
+.card.service img {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  border-radius: 0.7rem;
+  margin-bottom: 0.55rem;
+}
+
 .shut {
-  width: 4.6rem;
-  height: 4.6rem;
-  border-radius: 999px;
-  border: 4px solid var(--color-paper);
-  background: var(--color-brass);
-  box-shadow: 0 0 0 3px var(--color-ink);
+  width: 4.75rem;
+  height: 4.75rem;
+  border-radius: 50%;
+  border: 4px solid var(--color-ink);
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+  display: grid;
+  place-items: center;
+}
+
+.shut::after {
+  content: "";
+  width: 3.45rem;
+  height: 3.45rem;
+  border-radius: 50%;
+  background: var(--color-ink);
+  transition: transform 0.12s ease;
+}
+
+.shut:active::after {
+  transform: scale(0.86);
 }
 
 .shut:disabled {

@@ -20,10 +20,15 @@ type OsmEl = {
 };
 
 export async function loadPlaces(lat: number, lon: number): Promise<PlaceHit[]> {
-  const [wiki, osm] = await Promise.all([wikiPlaces(lat, lon), osmPlaces(lat, lon)]);
+  const [wiki, osm, here] = await Promise.all([
+    wikiPlaces(lat, lon).catch(() => [] as PlaceHit[]),
+    osmPlaces(lat, lon).catch(() => [] as PlaceHit[]),
+    herePlace(lat, lon).catch(() => [] as PlaceHit[]),
+  ]);
   const merged = new Map<string, PlaceHit>();
-  for (const place of [...wiki, ...osm]) {
+  for (const place of [...here, ...osm, ...wiki]) {
     const key = place.name.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    if (!key) continue;
     const have = merged.get(key);
     if (!have) {
       merged.set(key, place);
@@ -37,7 +42,9 @@ export async function loadPlaces(lat: number, lon: number): Promise<PlaceHit[]> 
       distance: Math.min(have.distance, place.distance),
     });
   }
-  return [...merged.values()].sort((a, b) => a.distance - b.distance).slice(0, 12);
+  return [...merged.values()]
+    .sort((a, b) => Number(Boolean(b.year)) - Number(Boolean(a.year)) || a.distance - b.distance)
+    .slice(0, 16);
 }
 
 export function aimPlace(places: PlaceHit[], lat: number, lon: number, heading: number | null) {
@@ -60,7 +67,7 @@ export function aimPlace(places: PlaceHit[], lat: number, lon: number, heading: 
 }
 
 async function wikiPlaces(lat: number, lon: number): Promise<PlaceHit[]> {
-  const geoUrl = `https://en.wikipedia.org/w/api.php?origin=*&action=query&format=json&list=geosearch&gscoord=${lat}|${lon}&gsradius=400&gslimit=8`;
+  const geoUrl = `https://en.wikipedia.org/w/api.php?origin=*&action=query&format=json&list=geosearch&gscoord=${lat}|${lon}&gsradius=900&gslimit=12`;
   const geo = (await getJson(geoUrl)) as { query?: { geosearch?: WikiGeo[] } };
   const hits = (geo.query?.geosearch ?? []).filter((item) => !/^list of /i.test(item.title));
   if (!hits.length) return [];
@@ -84,7 +91,7 @@ async function wikiPlaces(lat: number, lon: number): Promise<PlaceHit[]> {
 }
 
 async function osmPlaces(lat: number, lon: number): Promise<PlaceHit[]> {
-  const query = `[out:json][timeout:12];(nwr["name"]["historic"](around:350,${lat},${lon});nwr["name"]["building"]["start_date"](around:350,${lat},${lon}););out center tags 12;`;
+  const query = `[out:json][timeout:8];(nwr["name"]["historic"](around:450,${lat},${lon});nwr["name"]["building"](around:280,${lat},${lon}););out center tags 18;`;
   const res = await fetch("https://overpass-api.de/api/interpreter", {
     method: "POST",
     body: new URLSearchParams({ data: query }),
@@ -109,6 +116,31 @@ async function osmPlaces(lat: number, lon: number): Promise<PlaceHit[]> {
         lat: point.lat,
         lon: point.lon ?? lon,
         distance: haversine(lat, lon, point.lat, point.lon ?? lon),
+        href: "",
+      },
+    ];
+  });
+}
+
+async function herePlace(lat: number, lon: number): Promise<PlaceHit[]> {
+  const url = `https://photon.komoot.io/reverse?lat=${lat}&lon=${lon}&limit=8`;
+  const json = (await getJson(url)) as {
+    features?: { properties?: { name?: string; street?: string; city?: string; osm_value?: string; osm_key?: string } }[];
+  };
+  return (json.features ?? []).flatMap((feature, index) => {
+    const props = feature.properties ?? {};
+    const name = props.name || props.street;
+    if (!name) return [];
+    const kind = props.osm_value || props.osm_key || "place";
+    return [
+      {
+        id: `here-${index}-${name}`,
+        name,
+        year: "",
+        about: props.city ? `${name} · ${props.city}. Recorded as ${kind}.` : `${name} is the nearest named place.`,
+        lat,
+        lon,
+        distance: index * 12,
         href: "",
       },
     ];

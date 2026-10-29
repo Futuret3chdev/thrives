@@ -2,7 +2,7 @@ export const INSTAGRAM = "https://www.instagram.com/nguyen.tammy.thrives";
 export const EMAIL = "Tammy.n@futuret3ch.com.au";
 
 export const PLATES = [
-  { src: "/plates/melbourne-lane.jpg", title: "Bluestone lane", place: "Melbourne, Victoria" },
+  { src: "/plates/melbourne-lane.jpg", title: "A bluestone lane way", place: "Melbourne" },
   { src: "/plates/melbourne-terrace.jpg", title: "Iron lace", place: "Melbourne, Victoria" },
   { src: "/plates/ballarat-bank.jpg", title: "Goldfields bank", place: "Ballarat, Victoria" },
   { src: "/plates/sydney-stone.jpg", title: "Sandstone stores", place: "Sydney, New South Wales" },
@@ -19,15 +19,15 @@ export const PLATES = [
 ];
 
 export const SERVICES = [
-  { title: "Individual sittings", body: "One hour, an edited set, studio or outdoors. Email a time. Tammy quotes you in person." },
-  { title: "Family", body: "A longer sitting at home or outside. The people who already belong in the room." },
-  { title: "Weddings", body: "The day, from getting ready to the last table. A second photographer and an album when you want them." },
-  { title: "Pets", body: "Dogs, cats and birds, at home or in a park. The animal sets the pace." },
-  { title: "Corporate events", body: "Melbourne conferences, launches and rooms full of people who will not stand still." },
-  { title: "Headshots", body: "At the office or on location. Natural light, for the site and for LinkedIn." },
-  { title: "Business photography", body: "Brand and marketing stills that look like the company, not a stock library." },
-  { title: "Architectural commissions", body: "Facades, courts and rooms that still hold their original light." },
-  { title: "Heritage documentation", body: "Quiet records of buildings before they change. For archives, councils and families." },
+  { title: "Individual sittings", image: "/plates/service-sitting.jpg", body: "One hour, an edited set, studio or outdoors. Email a time. Tammy quotes you in person." },
+  { title: "Family", image: "/plates/service-family.jpg", body: "A longer sitting at home or outside. The people who already belong in the room." },
+  { title: "Weddings", image: "/plates/service-wedding.jpg", body: "The day, from getting ready to the last table. A second photographer and an album when you want them." },
+  { title: "Pets", image: "/plates/service-pet.jpg", body: "Dogs, cats and birds, at home or in a park. The animal sets the pace." },
+  { title: "Corporate events", image: "/plates/service-corporate.jpg", body: "Melbourne conferences, launches and rooms full of people who will not stand still." },
+  { title: "Headshots", image: "/plates/service-headshot.jpg", body: "At the office or on location. Natural light, for the site and for LinkedIn." },
+  { title: "Business photography", image: "/plates/warehouse.jpg", body: "Brand and marketing stills that look like the company, not a stock library." },
+  { title: "Architectural commissions", image: "/plates/melbourne-terrace.jpg", body: "Facades, courts and rooms that still hold their original light." },
+  { title: "Heritage documentation", image: "/plates/ballarat-bank.jpg", body: "Quiet records of buildings before they change. For archives, councils and families." },
 ];
 
 export const RATES = [

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { formatShutter } from "@/lib/photo/calc";
 import { averageLuma, gradeFrame, shutterFromAngle, type Flags, type Grade, type Lut, type Scopes } from "@/lib/photo/optics";
+import { LOOKS } from "@/lib/photo/looks";
 import { aimPlace, loadPlaces, type PlaceHit } from "@/lib/photo/places";
 
 const ISOS = [50, 100, 200, 400, 800, 1600, 3200, 6400, 12800];
@@ -28,6 +29,7 @@ type Settings = {
   mag: boolean;
   desqueeze: number;
   lut: Lut;
+  look: string;
   zebra: boolean;
   zebraAt: number;
   falseColor: boolean;
@@ -67,6 +69,7 @@ const INITIAL: Settings = {
   mag: false,
   desqueeze: 1,
   lut: "neutral",
+  look: "none",
   zebra: false,
   zebraAt: 0.8,
   falseColor: false,
@@ -291,7 +294,7 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
       const next = await loadPlaces(lat, lon);
       placesRef.current = next;
       setPlaces(next);
-      if (!next.length) setPlaceNote("Nothing dated is recorded within a short walk.");
+      if (!next.length) setPlaceNote("No named building is on record this close. Step toward the street and it will try again.");
       retarget();
     } catch {
       setPlaceNote("The place list did not answer. Try again in a moment.");
@@ -304,8 +307,8 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
     const next = aimPlace(placesRef.current, here.lat, here.lon, headingRef.current);
     const pin = pinnedRef.current;
     const chosen = pin ? (placesRef.current.find((place) => place.id === pin) ?? next) : next;
-    setAimed(chosen);
-    if (!chosen) setPlaceNote("Nothing dated is in front of the lens.");
+    setAimed(chosen ?? placesRef.current[0] ?? null);
+    if (!placesRef.current.length) setPlaceNote("No named building is on record this close.");
   }
 
   async function openSecond(deviceId: string) {
@@ -430,8 +433,8 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
         if (!blob) return;
         const url = URL.createObjectURL(blob);
         const previous = ringRef.current;
-        ringRef.current = [{ url, note: "Before the shutter", name: "before.jpg", blob, meta: "" }, ...previous].slice(0, 5);
-        previous.slice(4).forEach((shot) => URL.revokeObjectURL(shot.url));
+        ringRef.current = [{ url, note: "Before the shutter", name: "before.jpg", blob, meta: "" }];
+        previous.forEach((shot) => URL.revokeObjectURL(shot.url));
       }, "image/jpeg", 0.72);
     }
     if (desk.smooth) {
@@ -469,7 +472,7 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
     setBusy(true);
     try {
       const desk = settingsRef.current;
-      const baked = await bake(source, desk, false);
+      const baked = await bake(source, desk, false, copyright);
       if (!baked) return;
       if (desk.smooth) {
         const luma = averageLuma(baked.pixels);
@@ -491,7 +494,7 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
       }
       const pip = pipVideoRef.current;
       if (pip && pip.videoWidth) {
-        const second = await bake({ image: pip, width: pip.videoWidth, height: pip.videoHeight, mirror: false }, desk, false);
+        const second = await bake({ image: pip, width: pip.videoWidth, height: pip.videoHeight, mirror: false }, desk, false, copyright);
         if (second) frames.push({ url: URL.createObjectURL(second.jpeg), note: `${note} · camera 2`, name: `thrives-${slug || "frame"}-b.jpg`, blob: second.jpeg, meta });
       }
       setShots((current) => [...frames, ...current].slice(0, 18));
@@ -746,6 +749,21 @@ export function Camera({ onEdit }: { onEdit: (url: string) => void }) {
         </div>
         {cams.length === 0 && <p className="lens-note">Tap Back or Front. The phone asks permission, then every camera it has is listed here.</p>}
       </div>
+
+      <label className="field">
+        Filter
+        <select value={settings.look} onChange={(event) => patch({ look: event.target.value })}>
+          {LOOKS.map((look) => (
+            <option key={look.id} value={look.id}>
+              {look.group}: {look.name}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <button className="btn ghost" type="button" onClick={() => void pictureInPicture()}>
+        Float the picture
+      </button>
 
       <div className="tools" role="tablist">
         {(
@@ -1062,6 +1080,7 @@ function toGrade(settings: Settings, bias: number): Grade {
     kelvin: settings.kelvin,
     tint: settings.tint,
     lut: settings.lut,
+    look: settings.look,
     bias,
   };
 }
@@ -1136,6 +1155,7 @@ async function bake(
   source: { image: CanvasImageSource; width: number; height: number; mirror: boolean },
   settings: Settings,
   overlays: boolean,
+  mark: string,
 ) {
   const long = Math.max(source.width * settings.desqueeze, source.height);
   const scale = long > 2560 ? 2560 / long : 1;
@@ -1163,6 +1183,7 @@ async function bake(
     peak: [0, 0, 0],
   });
   ctx.putImageData(frame, 0, 0);
+  stamp(ctx, canvas, mark);
   const jpeg = await blobOf(canvas, "image/jpeg", 0.92);
   const png = await blobOf(canvas, "image/png");
   const proxyCanvas = document.createElement("canvas");
@@ -1171,6 +1192,19 @@ async function bake(
   proxyCanvas.getContext("2d")?.drawImage(canvas, 0, 0, proxyCanvas.width, proxyCanvas.height);
   const proxy = await blobOf(proxyCanvas, "image/jpeg", 0.8);
   return { jpeg, png, proxy, pixels: frame.data };
+}
+
+function stamp(ctx: CanvasRenderingContext2D, canvas: HTMLCanvasElement, mark: string) {
+  const label = `© ${mark}`;
+  const size = Math.max(18, Math.round(canvas.width / 42));
+  ctx.font = `600 ${size}px sans-serif`;
+  const width = ctx.measureText(label).width;
+  const x = 18;
+  const y = canvas.height - size - 16;
+  ctx.fillStyle = "rgba(28,23,18,0.55)";
+  ctx.fillRect(x - 8, y - size + 4, width + 20, size + 12);
+  ctx.fillStyle = "#f3eee6";
+  ctx.fillText(label, x, y + 4);
 }
 
 function blobOf(canvas: HTMLCanvasElement, type: string, quality?: number) {

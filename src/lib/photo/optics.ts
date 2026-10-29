@@ -1,3 +1,5 @@
+import { applyLook } from "@/lib/photo/looks";
+
 export type Lut = "neutral" | "film" | "log" | "portrait";
 
 export type Grade = {
@@ -9,6 +11,7 @@ export type Grade = {
   tint: number;
   lut: Lut;
   bias: number;
+  look: string;
 };
 
 export type Flags = {
@@ -146,6 +149,7 @@ export function gradeFrame(data: Uint8ClampedArray, width: number, height: numbe
         }
       }
       [r, g, b] = lutOf(r, g, b, grade.lut);
+      [r, g, b] = applyLook(r, g, b, grade.look, width ? x / width : 0.5, height ? y / height : 0.5);
       const Y = 0.2126 * r + 0.7152 * g + 0.0722 * b;
       if (flags.sample && (x & 1) === 0 && (y & 1) === 0) {
         scopes.luma[Math.min(31, (clamp01(Y) * 32) | 0)]! += 1;
